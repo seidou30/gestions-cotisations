@@ -98,6 +98,43 @@
         font-size: 0.9rem;
     }
 
+    /* Loader */
+    .loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(5px);
+    }
+
+    .loader-content {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+    }
+
+    .loader-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e0e0e0;
+        border-top: 5px solid #0a9396;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
     /* Main content */
     main {
         max-width: 1200px;
@@ -425,10 +462,6 @@
         border-left-color: #3498db;
     }
 
-    .notification.warning {
-        border-left-color: #f39c12;
-    }
-
     /* Modal de confirmation */
     .modal {
         display: none;
@@ -532,81 +565,6 @@
         .button-group {
             flex-direction: column;
         }
-    }
-
-    /* Style pour l'export PDF */
-    .pdf-export {
-        padding: 20px;
-        background: white;
-        font-family: 'Inter', sans-serif;
-    }
-
-    .pdf-header {
-        text-align: center;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 3px solid #0a9396;
-    }
-
-    .pdf-header h1 {
-        color: #005f73;
-        margin-bottom: 10px;
-    }
-
-    .pdf-header p {
-        color: #666;
-    }
-
-    .pdf-stats {
-        display: flex;
-        justify-content: space-around;
-        margin-bottom: 30px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 10px;
-    }
-
-    .pdf-stat-item {
-        text-align: center;
-    }
-
-    .pdf-stat-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #005f73;
-    }
-
-    .pdf-stat-label {
-        font-size: 12px;
-        color: #666;
-        margin-top: 5px;
-    }
-
-    .pdf-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-
-    .pdf-table th,
-    .pdf-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-
-    .pdf-table th {
-        background-color: #94d2bd;
-        color: #005f73;
-    }
-
-    .pdf-footer {
-        text-align: center;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #ddd;
-        font-size: 10px;
-        color: #999;
     }
 </style>
 </head>
@@ -730,10 +688,41 @@
     </div>
 </div>
 
-<script>
-    // Stockage des membres dans le localStorage
-    let membres = JSON.parse(localStorage.getItem('membres')) || [];
+<!-- Loader -->
+<div id="loader" class="loader" style="display: none;">
+    <div class="loader-content">
+        <div class="loader-spinner"></div>
+        <p>Chargement des données...</p>
+    </div>
+</div>
 
+<script type="module">
+    // Importation des modules Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+    // Configuration Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyAP-AVagsoZR1rdbKrXR-2VqsjbH7H77uE",
+        authDomain: "voile-e7c97.firebaseapp.com",
+        databaseURL: "https://voile-e7c97-default-rtdb.firebaseio.com",
+        projectId: "voile-e7c97",
+        storageBucket: "voile-e7c97.firebasestorage.app",
+        messagingSenderId: "570833271871",
+        appId: "1:570833271871:web:b4c5129c0c6c99c1d18c8a"
+    };
+
+    // Initialisation de Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const cotisationsRef = ref(database, 'cotisations');
+
+    // Variables globales
+    let cotisations = [];
+    let pendingDeleteId = null;
+    let pendingDeleteAll = false;
+
+    // Éléments DOM
     const form = document.getElementById('cotisationForm');
     const tableBody = document.getElementById('tableBody');
     const totalSpan = document.getElementById('total');
@@ -742,57 +731,19 @@
     const exportPDFBtn = document.getElementById('exportPDFBtn');
     const deleteAllBtn = document.getElementById('deleteAllBtn');
     const modal = document.getElementById('confirmModal');
-    let pendingDeleteIndex = null;
-    let pendingDeleteAll = false;
+    const loader = document.getElementById('loader');
 
-    // Fonction pour afficher les membres
-    function afficherMembres() {
-        tableBody.innerHTML = '';
-        let total = 0;
-        let payes = 0;
-        let nonPayes = 0;
-
-        if (membres.length === 0) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                <i class="fas fa-info-circle"></i> Aucune cotisation enregistrée. Ajoutez-en une !
-               </td>`;
-            tableBody.appendChild(tr);
-        } else {
-            membres.forEach((membre, index) => {
-                const tr = document.createElement('tr');
-                const montantNum = parseFloat(membre.montant);
-                
-                tr.innerHTML = `
-                    <td><strong>${escapeHtml(membre.nom)}</strong></td>
-                    <td>${escapeHtml(membre.prenom)}</td>
-                    <td>${montantNum.toLocaleString()} FCFA</td>
-                    <td>${formatDate(membre.date)}</td>
-                    <td><i class="${getMoyenIcon(membre.moyen)}"></i> ${escapeHtml(membre.moyen)}</td>
-                    <td><span class="${membre.payé ? 'paid' : 'not-paid'}">${membre.payé ? 'Payé' : 'Non payé'}</span></td>
-                    <td>
-                        ${!membre.payé ? `<button class="btn-pay" onclick="marquerPayé(${index})"><i class="fas fa-check"></i> Payé</button>` : 
-                                         `<button class="btn-pay" style="background:#95a5a6; cursor:default;" disabled><i class="fas fa-check-circle"></i> Payé</button>`}
-                        <button class="btn-delete" onclick="supprimerMembre(${index})"><i class="fas fa-trash"></i> Suppr</button>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-                
-                if(membre.payé) {
-                    total += montantNum;
-                    payes++;
-                } else {
-                    nonPayes++;
-                }
-            });
-        }
-
-        totalSpan.textContent = total.toLocaleString();
-        payesSpan.textContent = payes;
-        nonPayesSpan.textContent = nonPayes;
+    // Fonction pour afficher le loader
+    function showLoader() {
+        loader.style.display = 'flex';
     }
 
-    // Fonction pour échapper les caractères HTML (sécurité)
+    // Fonction pour cacher le loader
+    function hideLoader() {
+        loader.style.display = 'none';
+    }
+
+    // Fonction pour échapper les caractères HTML
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -810,13 +761,6 @@
         return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    // Formater la date pour le PDF
-    function formatDateForPDF(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-
     // Icône selon le moyen de paiement
     function getMoyenIcon(moyen) {
         switch(moyen) {
@@ -827,68 +771,136 @@
         }
     }
 
-    // Marquer un membre comme payé
-    window.marquerPayé = function(index) {
-        membres[index].payé = true;
-        localStorage.setItem('membres', JSON.stringify(membres));
-        afficherMembres();
-        showNotification('Statut mis à jour avec succès !', 'success');
+    // Mettre à jour les statistiques
+    function updateStats() {
+        let total = 0;
+        let payes = 0;
+        let nonPayes = 0;
+
+        cotisations.forEach(cotisation => {
+            const montantNum = parseFloat(cotisation.montant);
+            if (cotisation.payé) {
+                total += montantNum;
+                payes++;
+            } else {
+                nonPayes++;
+            }
+        });
+
+        totalSpan.textContent = total.toLocaleString();
+        payesSpan.textContent = payes;
+        nonPayesSpan.textContent = nonPayes;
     }
 
-    // Supprimer un membre individuel
-    window.supprimerMembre = function(index) {
-        pendingDeleteIndex = index;
-        pendingDeleteAll = false;
-        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer la cotisation de ${membres[index].nom} ${membres[index].prenom} ?`;
-        modal.style.display = 'block';
-    }
+    // Afficher les cotisations dans le tableau
+    function afficherCotisations() {
+        tableBody.innerHTML = '';
 
-    // Supprimer tous les membres
-    function supprimerTousMembres() {
-        pendingDeleteAll = true;
-        pendingDeleteIndex = null;
-        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer TOUTES les cotisations (${membres.length} éléments) ? Cette action est irréversible.`;
-        modal.style.display = 'block';
-    }
-
-    // Confirmer la suppression
-    function confirmerSuppression() {
-        if (pendingDeleteAll) {
-            // Supprimer tout
-            membres = [];
-            localStorage.setItem('membres', JSON.stringify(membres));
-            afficherMembres();
-            showNotification('Toutes les cotisations ont été supprimées avec succès !', 'success');
-        } else if (pendingDeleteIndex !== null) {
-            // Supprimer un élément spécifique
-            const deletedName = `${membres[pendingDeleteIndex].nom} ${membres[pendingDeleteIndex].prenom}`;
-            membres.splice(pendingDeleteIndex, 1);
-            localStorage.setItem('membres', JSON.stringify(membres));
-            afficherMembres();
-            showNotification(`La cotisation de ${deletedName} a été supprimée avec succès !`, 'success');
+        if (cotisations.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                <i class="fas fa-info-circle"></i> Aucune cotisation enregistrée. Ajoutez-en une !
+               </td>`;
+            tableBody.appendChild(tr);
+            updateStats();
+            return;
         }
-        fermerModal();
+
+        cotisations.forEach((cotisation, index) => {
+            const tr = document.createElement('tr');
+            const montantNum = parseFloat(cotisation.montant);
+            
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(cotisation.nom)}</strong></td>
+                <td>${escapeHtml(cotisation.prenom)}</td>
+                <td>${montantNum.toLocaleString()} FCFA</td>
+                <td>${formatDate(cotisation.date)}</td>
+                <td><i class="${getMoyenIcon(cotisation.moyen)}"></i> ${escapeHtml(cotisation.moyen)}</td>
+                <td><span class="${cotisation.payé ? 'paid' : 'not-paid'}">${cotisation.payé ? 'Payé' : 'Non payé'}</span></td>
+                <td>
+                    ${!cotisation.payé ? `<button class="btn-pay" data-id="${cotisation.id}"><i class="fas fa-check"></i> Payé</button>` : 
+                                         `<button class="btn-pay" style="background:#95a5a6; cursor:default;" disabled><i class="fas fa-check-circle"></i> Payé</button>`}
+                    <button class="btn-delete" data-id="${cotisation.id}"><i class="fas fa-trash"></i> Suppr</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Ajouter les écouteurs d'événements pour les boutons
+        document.querySelectorAll('.btn-pay[data-id]').forEach(btn => {
+            btn.addEventListener('click', () => marquerPaye(btn.getAttribute('data-id')));
+        });
+
+        document.querySelectorAll('.btn-delete[data-id]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const cotisation = cotisations.find(c => c.id === id);
+                if (cotisation) {
+                    pendingDeleteId = id;
+                    pendingDeleteAll = false;
+                    document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer la cotisation de ${cotisation.nom} ${cotisation.prenom} ?`;
+                    modal.style.display = 'block';
+                }
+            });
+        });
+
+        updateStats();
     }
 
-    // Fermer le modal
-    function fermerModal() {
-        modal.style.display = 'none';
-        pendingDeleteIndex = null;
-        pendingDeleteAll = false;
+    // Marquer une cotisation comme payée
+    async function marquerPaye(id) {
+        showLoader();
+        try {
+            const cotisationRef = ref(database, `cotisations/${id}`);
+            await update(cotisationRef, { payé: true });
+            showNotification('Statut mis à jour avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour:', error);
+            showNotification('Erreur lors de la mise à jour', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Supprimer une cotisation
+    async function supprimerCotisation(id) {
+        showLoader();
+        try {
+            const cotisationRef = ref(database, `cotisations/${id}`);
+            await remove(cotisationRef);
+            showNotification('Cotisation supprimée avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Supprimer toutes les cotisations
+    async function supprimerToutesCotisations() {
+        showLoader();
+        try {
+            await remove(cotisationsRef);
+            showNotification('Toutes les cotisations ont été supprimées avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        } finally {
+            hideLoader();
+        }
     }
 
     // Ajouter une cotisation
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Récupérer les valeurs
         const nom = document.getElementById('nom').value.trim();
         const prenom = document.getElementById('prenom').value.trim();
         const montant = document.getElementById('montant').value;
         const date = document.getElementById('date').value;
         const moyen = document.getElementById('moyen').value;
         
-        // Validation
         if (!nom || !prenom || !montant || !date || !moyen) {
             showNotification('Veuillez remplir tous les champs', 'error');
             return;
@@ -899,26 +911,32 @@
             return;
         }
         
-        const nouveauMembre = {
+        const nouvelleCotisation = {
             nom: nom,
             prenom: prenom,
-            montant: montant,
+            montant: parseFloat(montant),
             date: date,
             moyen: moyen,
-            payé: true // On considère payé car le paiement est effectué
+            payé: true,
+            createdAt: new Date().toISOString()
         };
         
-        membres.push(nouveauMembre);
-        localStorage.setItem('membres', JSON.stringify(membres));
-        form.reset();
-        
-        showNotification('Cotisation ajoutée avec succès !', 'success');
-        afficherMembres();
+        showLoader();
+        try {
+            await push(cotisationsRef, nouvelleCotisation);
+            form.reset();
+            showNotification('Cotisation ajoutée avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de l\'ajout:', error);
+            showNotification('Erreur lors de l\'ajout de la cotisation', 'error');
+        } finally {
+            hideLoader();
+        }
     });
     
-    // Fonction d'export PDF
+    // Export PDF
     async function exporterPDF() {
-        if (membres.length === 0) {
+        if (cotisations.length === 0) {
             showNotification('Aucune donnée à exporter', 'error');
             return;
         }
@@ -928,16 +946,18 @@
         try {
             // Créer un élément temporaire pour le PDF
             const pdfContent = document.createElement('div');
-            pdfContent.className = 'pdf-export';
+            pdfContent.style.padding = '20px';
+            pdfContent.style.background = 'white';
+            pdfContent.style.fontFamily = 'Inter, sans-serif';
             
             // Calculer les statistiques
             let total = 0;
             let payes = 0;
             let nonPayes = 0;
             
-            membres.forEach(membre => {
-                const montantNum = parseFloat(membre.montant);
-                if(membre.payé) {
+            cotisations.forEach(cotisation => {
+                const montantNum = parseFloat(cotisation.montant);
+                if(cotisation.payé) {
                     total += montantNum;
                     payes++;
                 } else {
@@ -947,57 +967,57 @@
             
             // Construire le contenu HTML pour le PDF
             pdfContent.innerHTML = `
-                <div class="pdf-header">
-                    <h1>Le Groupe Voilez Vous</h1>
-                    <h2>Rapport des Cotisations</h2>
-                    <p>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+                <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #0a9396;">
+                    <h1 style="color: #005f73; margin-bottom: 10px;">Le Groupe Voilez Vous</h1>
+                    <h2 style="color: #0a9396;">Rapport des Cotisations</h2>
+                    <p style="color: #666;">Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
                 </div>
                 
-                <div class="pdf-stats">
-                    <div class="pdf-stat-item">
-                        <div class="pdf-stat-value">${total.toLocaleString()} FCFA</div>
-                        <div class="pdf-stat-label">Total collecté</div>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${total.toLocaleString()} FCFA</div>
+                        <div style="font-size: 12px; color: #666;">Total collecté</div>
                     </div>
-                    <div class="pdf-stat-item">
-                        <div class="pdf-stat-value">${payes}</div>
-                        <div class="pdf-stat-label">Membres à jour</div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${payes}</div>
+                        <div style="font-size: 12px; color: #666;">Membres à jour</div>
                     </div>
-                    <div class="pdf-stat-item">
-                        <div class="pdf-stat-value">${nonPayes}</div>
-                        <div class="pdf-stat-label">Membres non payés</div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${nonPayes}</div>
+                        <div style="font-size: 12px; color: #666;">Membres non payés</div>
                     </div>
-                    <div class="pdf-stat-item">
-                        <div class="pdf-stat-value">${membres.length}</div>
-                        <div class="pdf-stat-label">Total membres</div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${cotisations.length}</div>
+                        <div style="font-size: 12px; color: #666;">Total membres</div>
                     </div>
                 </div>
                 
-                <table class="pdf-table">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                     <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                            <th>Montant (FCFA)</th>
-                            <th>Date</th>
-                            <th>Moyen de paiement</th>
-                            <th>Statut</th>
+                        <tr style="background-color: #94d2bd;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Nom</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Prénom</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Montant (FCFA)</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Date</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Moyen de paiement</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Statut</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${membres.map(membre => `
+                        ${cotisations.map(cotisation => `
                             <tr>
-                                <td>${escapeHtml(membre.nom)}</td>
-                                <td>${escapeHtml(membre.prenom)}</td>
-                                <td>${parseFloat(membre.montant).toLocaleString()}</td>
-                                <td>${formatDateForPDF(membre.date)}</td>
-                                <td>${escapeHtml(membre.moyen)}</td>
-                                <td>${membre.payé ? 'Payé' : 'Non payé'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.nom)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.prenom)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${parseFloat(cotisation.montant).toLocaleString()}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(cotisation.date)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.moyen)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${cotisation.payé ? 'Payé' : 'Non payé'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
                 
-                <div class="pdf-footer">
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999;">
                     <p>Document généré automatiquement - Le Groupe Voilez Vous</p>
                     <p>${new Date().getFullYear()} - Tous droits réservés</p>
                 </div>
@@ -1005,7 +1025,6 @@
             
             document.body.appendChild(pdfContent);
             
-            // Utiliser html2canvas et jsPDF
             const { jsPDF } = window.jspdf;
             const canvas = await html2canvas(pdfContent, {
                 scale: 2,
@@ -1020,8 +1039,8 @@
                 format: 'a4'
             });
             
-            const imgWidth = 210; // A4 width in mm
-            const pageHeight = 297; // A4 height in mm
+            const imgWidth = 210;
+            const pageHeight = 297;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             let heightLeft = imgHeight;
             let position = 0;
@@ -1036,15 +1055,13 @@
                 heightLeft -= pageHeight;
             }
             
-            // Télécharger le PDF
             const now = new Date();
             const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
             pdf.save(`cotisations_voilez_vous_${dateStr}.pdf`);
             
-            // Nettoyer
             document.body.removeChild(pdfContent);
             
-            showNotification(`PDF exporté avec succès ! ${membres.length} cotisations`, 'success');
+            showNotification(`PDF exporté avec succès ! ${cotisations.length} cotisations`, 'success');
         } catch (error) {
             console.error('Erreur lors de l\'export PDF:', error);
             showNotification('Erreur lors de la génération du PDF', 'error');
@@ -1053,7 +1070,6 @@
     
     // Notification
     function showNotification(message, type) {
-        // Supprimer les anciennes notifications
         const oldNotifications = document.querySelectorAll('.notification');
         oldNotifications.forEach(notif => notif.remove());
         
@@ -1071,45 +1087,76 @@
         }, 3000);
     }
     
-    // Gestionnaire d'export PDF
-    exportPDFBtn.addEventListener('click', exporterPDF);
+    // Confirmer la suppression
+    async function confirmerSuppression() {
+        if (pendingDeleteAll) {
+            await supprimerToutesCotisations();
+        } else if (pendingDeleteId) {
+            await supprimerCotisation(pendingDeleteId);
+        }
+        fermerModal();
+    }
     
-    // Gestionnaire de suppression de tous les membres
+    // Fermer le modal
+    function fermerModal() {
+        modal.style.display = 'none';
+        pendingDeleteId = null;
+        pendingDeleteAll = false;
+    }
+    
+    // Écouter les changements en temps réel depuis Firebase
+    function listenToFirebase() {
+        showLoader();
+        onValue(cotisationsRef, (snapshot) => {
+            const data = snapshot.val();
+            cotisations = [];
+            
+            if (data) {
+                cotisations = Object.keys(data).map(key => ({
+                    id: key,
+                    ...data[key]
+                })).sort((a, b) => {
+                    // Trier par date de création décroissante
+                    if (a.createdAt && b.createdAt) {
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    }
+                    return 0;
+                });
+            }
+            
+            afficherCotisations();
+            hideLoader();
+        }, (error) => {
+            console.error('Erreur lors de la lecture des données:', error);
+            showNotification('Erreur de connexion à Firebase', 'error');
+            hideLoader();
+        });
+    }
+    
+    // Événements
+    exportPDFBtn.addEventListener('click', exporterPDF);
     deleteAllBtn.addEventListener('click', () => {
-        if (membres.length === 0) {
+        if (cotisations.length === 0) {
             showNotification('Aucune cotisation à supprimer', 'error');
             return;
         }
-        supprimerTousMembres();
+        pendingDeleteAll = true;
+        pendingDeleteId = null;
+        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer TOUTES les cotisations (${cotisations.length} éléments) ? Cette action est irréversible.`;
+        modal.style.display = 'block';
     });
     
-    // Événements du modal
     document.getElementById('modalConfirmBtn').addEventListener('click', confirmerSuppression);
     document.getElementById('modalCancelBtn').addEventListener('click', fermerModal);
     
-    // Fermer le modal en cliquant en dehors
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
             fermerModal();
         }
     });
     
-    // Gestion du logo cliquable (pour changer l'image plus tard)
-    document.getElementById('logoPlaceholder').addEventListener('click', function() {
-        alert('💡 Pour changer le logo :\n1. Remplacez l\'icône par une balise <img> dans le HTML\n2. Ou utilisez ce script pour charger une image');
-    });
-    
-    // Charger un logo sauvegardé si existant
-    const savedLogo = localStorage.getItem('logoData');
-    if (savedLogo) {
-        const img = document.createElement('img');
-        img.src = savedLogo;
-        document.getElementById('logoPlaceholder').innerHTML = '';
-        document.getElementById('logoPlaceholder').appendChild(img);
-    }
-    
-    // Affichage initial
-    afficherMembres();
+    // Initialisation
+    listenToFirebase();
 </script>
 </body>
 </html>
