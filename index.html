@@ -183,7 +183,7 @@
         flex-wrap: wrap;
     }
 
-    button[type="submit"], .btn-export-pdf {
+    button[type="submit"], .btn-export-pdf, .btn-delete-all {
         padding: 12px 25px;
         border-radius: 12px;
         font-size: 1rem;
@@ -217,6 +217,16 @@
     .btn-export-pdf:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(231,76,60,0.3);
+    }
+
+    .btn-delete-all {
+        background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+        color: white;
+    }
+
+    .btn-delete-all:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(127,140,141,0.3);
     }
 
     /* Cartes statistiques */
@@ -325,10 +335,31 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
+        margin-right: 5px;
     }
 
     .btn-pay:hover {
         background: #27ae60;
+        transform: scale(1.02);
+    }
+
+    .btn-delete {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-delete:hover {
+        background: #c0392b;
         transform: scale(1.02);
     }
 
@@ -394,6 +425,89 @@
         border-left-color: #3498db;
     }
 
+    .notification.warning {
+        border-left-color: #f39c12;
+    }
+
+    /* Modal de confirmation */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 0;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 20px 20px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-header i {
+        font-size: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 20px;
+        color: #2c3e50;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .modal-btn-confirm {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .modal-btn-confirm:hover {
+        background: #c0392b;
+        transform: translateY(-2px);
+    }
+
+    .modal-btn-cancel {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .modal-btn-cancel:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .header-container {
@@ -410,7 +524,7 @@
             font-size: 0.85rem;
         }
 
-        .btn-pay {
+        .btn-pay, .btn-delete {
             padding: 5px 10px;
             font-size: 0.75rem;
         }
@@ -548,6 +662,9 @@
                 <button type="button" class="btn-export-pdf" id="exportPDFBtn">
                     <i class="fas fa-file-pdf"></i> Exporter en PDF
                 </button>
+                <button type="button" class="btn-delete-all" id="deleteAllBtn">
+                    <i class="fas fa-trash-alt"></i> Supprimer tout
+                </button>
             </div>
         </form>
     </div>
@@ -596,6 +713,23 @@
     <p><i class="fas fa-sailboat"></i> Le Groupe Voilez Vous • Gestion des cotisations • Tous droits réservés</p>
 </footer>
 
+<!-- Modal de confirmation -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Confirmation de suppression</h3>
+        </div>
+        <div class="modal-body">
+            <p id="modalMessage">Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-cancel" id="modalCancelBtn">Annuler</button>
+            <button class="modal-btn modal-btn-confirm" id="modalConfirmBtn">Supprimer</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Stockage des membres dans le localStorage
     let membres = JSON.parse(localStorage.getItem('membres')) || [];
@@ -606,6 +740,10 @@
     const payesSpan = document.getElementById('payes');
     const nonPayesSpan = document.getElementById('nonPayes');
     const exportPDFBtn = document.getElementById('exportPDFBtn');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const modal = document.getElementById('confirmModal');
+    let pendingDeleteIndex = null;
+    let pendingDeleteAll = false;
 
     // Fonction pour afficher les membres
     function afficherMembres() {
@@ -618,7 +756,7 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `<td colspan="7" style="text-align: center; padding: 40px; color: #999;">
                 <i class="fas fa-info-circle"></i> Aucune cotisation enregistrée. Ajoutez-en une !
-              </td>`;
+               </td>`;
             tableBody.appendChild(tr);
         } else {
             membres.forEach((membre, index) => {
@@ -633,8 +771,9 @@
                     <td><i class="${getMoyenIcon(membre.moyen)}"></i> ${escapeHtml(membre.moyen)}</td>
                     <td><span class="${membre.payé ? 'paid' : 'not-paid'}">${membre.payé ? 'Payé' : 'Non payé'}</span></td>
                     <td>
-                        ${!membre.payé ? `<button class="btn-pay" onclick="marquerPayé(${index})"><i class="fas fa-check"></i> Marquer Payé</button>` : 
+                        ${!membre.payé ? `<button class="btn-pay" onclick="marquerPayé(${index})"><i class="fas fa-check"></i> Payé</button>` : 
                                          `<button class="btn-pay" style="background:#95a5a6; cursor:default;" disabled><i class="fas fa-check-circle"></i> Payé</button>`}
+                        <button class="btn-delete" onclick="supprimerMembre(${index})"><i class="fas fa-trash"></i> Suppr</button>
                     </td>
                 `;
                 tableBody.appendChild(tr);
@@ -694,6 +833,48 @@
         localStorage.setItem('membres', JSON.stringify(membres));
         afficherMembres();
         showNotification('Statut mis à jour avec succès !', 'success');
+    }
+
+    // Supprimer un membre individuel
+    window.supprimerMembre = function(index) {
+        pendingDeleteIndex = index;
+        pendingDeleteAll = false;
+        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer la cotisation de ${membres[index].nom} ${membres[index].prenom} ?`;
+        modal.style.display = 'block';
+    }
+
+    // Supprimer tous les membres
+    function supprimerTousMembres() {
+        pendingDeleteAll = true;
+        pendingDeleteIndex = null;
+        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer TOUTES les cotisations (${membres.length} éléments) ? Cette action est irréversible.`;
+        modal.style.display = 'block';
+    }
+
+    // Confirmer la suppression
+    function confirmerSuppression() {
+        if (pendingDeleteAll) {
+            // Supprimer tout
+            membres = [];
+            localStorage.setItem('membres', JSON.stringify(membres));
+            afficherMembres();
+            showNotification('Toutes les cotisations ont été supprimées avec succès !', 'success');
+        } else if (pendingDeleteIndex !== null) {
+            // Supprimer un élément spécifique
+            const deletedName = `${membres[pendingDeleteIndex].nom} ${membres[pendingDeleteIndex].prenom}`;
+            membres.splice(pendingDeleteIndex, 1);
+            localStorage.setItem('membres', JSON.stringify(membres));
+            afficherMembres();
+            showNotification(`La cotisation de ${deletedName} a été supprimée avec succès !`, 'success');
+        }
+        fermerModal();
+    }
+
+    // Fermer le modal
+    function fermerModal() {
+        modal.style.display = 'none';
+        pendingDeleteIndex = null;
+        pendingDeleteAll = false;
     }
 
     // Ajouter une cotisation
@@ -892,6 +1073,26 @@
     
     // Gestionnaire d'export PDF
     exportPDFBtn.addEventListener('click', exporterPDF);
+    
+    // Gestionnaire de suppression de tous les membres
+    deleteAllBtn.addEventListener('click', () => {
+        if (membres.length === 0) {
+            showNotification('Aucune cotisation à supprimer', 'error');
+            return;
+        }
+        supprimerTousMembres();
+    });
+    
+    // Événements du modal
+    document.getElementById('modalConfirmBtn').addEventListener('click', confirmerSuppression);
+    document.getElementById('modalCancelBtn').addEventListener('click', fermerModal);
+    
+    // Fermer le modal en cliquant en dehors
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            fermerModal();
+        }
+    });
     
     // Gestion du logo cliquable (pour changer l'image plus tard)
     document.getElementById('logoPlaceholder').addEventListener('click', function() {
