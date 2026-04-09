@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Gestion des Cotisations - Le Groupe Voilez Vous</title>
 <!-- Font Awesome pour les icônes -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -102,7 +102,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0,0,0,0.8);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -115,6 +115,7 @@
         padding: 30px;
         border-radius: 20px;
         text-align: center;
+        min-width: 280px;
     }
 
     .loader-spinner {
@@ -125,6 +126,30 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin: 0 auto 20px;
+    }
+
+    .loader-progress {
+        margin-top: 15px;
+        font-size: 0.9rem;
+        color: #005f73;
+        font-weight: 500;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 3px;
     }
 
     @keyframes spin {
@@ -398,6 +423,7 @@
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        min-width: 600px;
     }
 
     th {
@@ -716,6 +742,13 @@
         .per-page-container {
             margin-left: 0;
         }
+        
+        .notification {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            font-size: 0.85rem;
+        }
     }
 </style>
 </head>
@@ -723,7 +756,7 @@
 <header>
     <div class="header-container">
         <div class="logo-placeholder" id="logoPlaceholder">
-            <img src="images.png" alt="Logo Le Groupe Voilez Vous" id="logoImg">
+            <img src="https://via.placeholder.com/80x80/0a9396/ffffff?text=VOILE" alt="Logo Le Groupe Voilez Vous" id="logoImg">
         </div>
         <div class="header-text">
             <h1><i class="fas fa-chart-line"></i> Gestion des Cotisations</h1>
@@ -769,7 +802,7 @@
                     <i class="fas fa-save"></i> Enregistrer la cotisation
                 </button>
                 <button type="button" class="btn-export-pdf" id="exportPDFBtn">
-                    <i class="fas fa-file-pdf"></i> Exporter en PDF
+                    <i class="fas fa-file-pdf"></i> Exporter tout en PDF
                 </button>
                 <button type="button" class="btn-delete-all" id="deleteAllBtn">
                     <i class="fas fa-trash-alt"></i> Supprimer tout
@@ -883,7 +916,11 @@
 <div id="loader" class="loader" style="display: none;">
     <div class="loader-content">
         <div class="loader-spinner"></div>
-        <p>Chargement des données...</p>
+        <p id="loaderText">Chargement des données...</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="loader-progress" id="progressPercent">0%</div>
     </div>
 </div>
 
@@ -940,35 +977,22 @@
     const pageInfo = document.getElementById('pageInfo');
     const perPageSelect = document.getElementById('perPageSelect');
     const logoImg = document.getElementById('logoImg');
+    const loaderText = document.getElementById('loaderText');
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
 
-    // Fonction pour changer le logo (upload)
-    logoImg.addEventListener('click', () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    logoImg.src = event.target.result;
-                    localStorage.setItem('customLogo', event.target.result);
-                    showNotification('Logo modifié avec succès !', 'success');
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-        input.click();
-    });
-
-    // Charger le logo personnalisé s'il existe
-    const savedLogo = localStorage.getItem('customLogo');
-    if (savedLogo) {
-        logoImg.src = savedLogo;
+    // Fonction pour mettre à jour la progression
+    function updateProgress(percent, message) {
+        progressFill.style.width = `${percent}%`;
+        progressPercent.textContent = `${Math.round(percent)}%`;
+        if (message) loaderText.textContent = message;
     }
 
     // Fonction pour afficher le loader
-    function showLoader() {
+    function showLoader(message = 'Chargement des données...') {
+        loaderText.textContent = message;
+        progressFill.style.width = '0%';
+        progressPercent.textContent = '0%';
         loader.style.display = 'flex';
     }
 
@@ -1136,7 +1160,7 @@
 
     // Marquer une cotisation comme payée
     async function marquerPaye(id) {
-        showLoader();
+        showLoader('Mise à jour en cours...');
         try {
             const cotisationRef = ref(database, `cotisations/${id}`);
             await update(cotisationRef, { payé: true });
@@ -1151,7 +1175,7 @@
 
     // Supprimer une cotisation
     async function supprimerCotisation(id) {
-        showLoader();
+        showLoader('Suppression en cours...');
         try {
             const cotisationRef = ref(database, `cotisations/${id}`);
             await remove(cotisationRef);
@@ -1166,7 +1190,7 @@
 
     // Supprimer toutes les cotisations
     async function supprimerToutesCotisations() {
-        showLoader();
+        showLoader('Suppression de toutes les cotisations...');
         try {
             await remove(cotisationsRef);
             showNotification('Toutes les cotisations ont été supprimées avec succès !', 'success');
@@ -1208,7 +1232,7 @@
             createdAt: new Date().toISOString()
         };
         
-        showLoader();
+        showLoader('Ajout en cours...');
         try {
             await push(cotisationsRef, nouvelleCotisation);
             form.reset();
@@ -1221,21 +1245,29 @@
         }
     });
     
-    // Export PDF
+    // Export PDF amélioré pour mobile - exporte TOUS les membres
     async function exporterPDF() {
         if (cotisations.length === 0) {
             showNotification('Aucune donnée à exporter', 'error');
             return;
         }
         
-        showNotification('Génération du PDF en cours...', 'info');
+        showLoader(`Préparation du PDF... 0/${cotisations.length} membres`);
+        updateProgress(0, `Préparation de l'export (${cotisations.length} membres)...`);
         
         try {
-            const pdfContent = document.createElement('div');
-            pdfContent.style.padding = '20px';
-            pdfContent.style.background = 'white';
-            pdfContent.style.fontFamily = 'Inter, sans-serif';
+            // Créer un conteneur pour le PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '15px';
+            pdfContainer.style.background = 'white';
+            pdfContainer.style.fontFamily = 'Inter, sans-serif';
+            pdfContainer.style.width = '800px';
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.top = '-9999px';
+            document.body.appendChild(pdfContainer);
             
+            // Calculer les statistiques
             let total = 0;
             let payes = 0;
             let nonPayes = 0;
@@ -1250,53 +1282,153 @@
                 }
             });
             
-            pdfContent.innerHTML = `
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #005f73;">Le Groupe Voilez Vous</h1>
-                    <h2 style="color: #0a9396;">Rapport des Cotisations</h2>
-                    <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+            // En-tête du PDF
+            const headerHTML = `
+                <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #0a9396;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                        ${logoImg.src ? `<img src="${logoImg.src}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" alt="Logo">` : '<i class="fas fa-sailboat" style="font-size: 48px; color: #0a9396;"></i>'}
+                        <div>
+                            <h1 style="color: #005f73; margin: 0; font-size: 24px;">Le Groupe Voilez Vous</h1>
+                            <h2 style="color: #0a9396; margin: 5px 0 0 0; font-size: 18px;">Rapport des Cotisations</h2>
+                        </div>
+                    </div>
+                    <p style="color: #666; margin: 10px 0 0 0; font-size: 12px;">Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
                 </div>
-                <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
-                    <div><strong>Total:</strong> ${total.toLocaleString()} FCFA</div>
-                    <div><strong>Payés:</strong> ${payes}</div>
-                    <div><strong>Non payés:</strong> ${nonPayes}</div>
-                    <div><strong>Total membres:</strong> ${cotisations.length}</div>
+                
+                <div style="display: flex; justify-content: space-around; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 10px; flex-wrap: wrap; gap: 10px;">
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${total.toLocaleString()} FCFA</div>
+                        <div style="font-size: 11px; color: #666;">Total collecté</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${payes}</div>
+                        <div style="font-size: 11px; color: #666;">Membres à jour</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${nonPayes}</div>
+                        <div style="font-size: 11px; color: #666;">Membres non payés</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${cotisations.length}</div>
+                        <div style="font-size: 11px; color: #666;">Total membres</div>
+                    </div>
                 </div>
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead><tr style="background:#94d2bd;">
-                        <th style="border:1px solid #ddd; padding:8px;">Nom</th>
-                        <th style="border:1px solid #ddd; padding:8px;">Prénom</th>
-                        <th style="border:1px solid #ddd; padding:8px;">Montant</th>
-                        <th style="border:1px solid #ddd; padding:8px;">Date</th>
-                        <th style="border:1px solid #ddd; padding:8px;">Statut</th>
-                    </tr></thead>
-                    <tbody>
-                        ${cotisations.map(c => `
-                            <tr>
-                                <td style="border:1px solid #ddd; padding:8px;">${escapeHtml(c.nom)}</td>
-                                <td style="border:1px solid #ddd; padding:8px;">${escapeHtml(c.prenom)}</td>
-                                <td style="border:1px solid #ddd; padding:8px;">${parseFloat(c.montant).toLocaleString()} FCFA</td>
-                                <td style="border:1px solid #ddd; padding:8px;">${formatDate(c.date)}</td>
-                                <td style="border:1px solid #ddd; padding:8px;">${c.payé ? 'Payé' : 'Non payé'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
             `;
             
-            document.body.appendChild(pdfContent);
-            const { jsPDF } = window.jspdf;
-            const canvas = await html2canvas(pdfContent, { scale: 2 });
+            pdfContainer.innerHTML = headerHTML;
+            
+            // Ajouter les tableaux par lots pour éviter de surcharger le DOM
+            const batchSize = 100;
+            const totalBatches = Math.ceil(cotisations.length / batchSize);
+            
+            for (let batch = 0; batch < totalBatches; batch++) {
+                const start = batch * batchSize;
+                const end = Math.min(start + batchSize, cotisations.length);
+                const batchData = cotisations.slice(start, end);
+                
+                updateProgress((batch / totalBatches) * 100, `Génération du PDF... ${start + 1}-${end}/${cotisations.length} membres`);
+                
+                let tableHTML = `
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px;">
+                        <thead>
+                            <tr style="background-color: #94d2bd;">
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Nom</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Prénom</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Montant</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Date</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Moyen</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                batchData.forEach(cotisation => {
+                    tableHTML += `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.nom)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.prenom)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${parseFloat(cotisation.montant).toLocaleString()} FCFA</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(cotisation.date)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.moyen)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${cotisation.payé ? 'Payé' : 'Non payé'}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+                
+                pdfContainer.insertAdjacentHTML('beforeend', tableHTML);
+                
+                // Petit délai pour permettre au DOM de se mettre à jour
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Pied de page
+            pdfContainer.insertAdjacentHTML('beforeend', `
+                <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9px; color: #999;">
+                    <p>Document généré automatiquement - Le Groupe Voilez Vous</p>
+                    <p>${new Date().getFullYear()} - Tous droits réservés</p>
+                </div>
+            `);
+            
+            updateProgress(90, 'Génération du PDF en cours...');
+            
+            // Configuration pour mobile - meilleure qualité mais optimisée
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: false
+            });
+            
+            updateProgress(95, 'Finalisation du PDF...');
+            
             const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const imgWidth = 210;
+            const { jsPDF } = window.jspdf;
+            
+            // Format A4 en portrait
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save(`cotisations_voilez_vous_${Date.now()}.pdf`);
-            document.body.removeChild(pdfContent);
-            showNotification('PDF exporté avec succès !', 'success');
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            pdf.save(`cotisations_voilez_vous_${dateStr}.pdf`);
+            
+            // Nettoyer
+            document.body.removeChild(pdfContainer);
+            
+            updateProgress(100, 'Terminé !');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            showNotification(`PDF exporté avec succès ! ${cotisations.length} cotisations`, 'success');
         } catch (error) {
-            showNotification('Erreur lors de l\'export PDF', 'error');
+            console.error('Erreur lors de l\'export PDF:', error);
+            showNotification('Erreur lors de la génération du PDF', 'error');
+        } finally {
+            hideLoader();
         }
     }
     
@@ -1336,9 +1468,35 @@
         pendingDeleteAll = false;
     }
     
+    // Gestion du logo personnalisé
+    logoImg.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    logoImg.src = event.target.result;
+                    localStorage.setItem('customLogo', event.target.result);
+                    showNotification('Logo modifié avec succès !', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        input.click();
+    });
+    
+    // Charger le logo personnalisé s'il existe
+    const savedLogo = localStorage.getItem('customLogo');
+    if (savedLogo) {
+        logoImg.src = savedLogo;
+    }
+    
     // Écouter les changements en temps réel depuis Firebase
     function listenToFirebase() {
-        showLoader();
+        showLoader('Chargement des données...');
         onValue(cotisationsRef, (snapshot) => {
             const data = snapshot.val();
             cotisations = [];
