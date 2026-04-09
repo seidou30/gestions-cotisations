@@ -57,8 +57,8 @@
     }
 
     .logo-placeholder {
-        width: 70px;
-        height: 70px;
+        width: 80px;
+        height: 80px;
         background: rgba(255,255,255,0.2);
         border-radius: 50%;
         display: flex;
@@ -69,6 +69,7 @@
         transition: all 0.3s ease;
         cursor: pointer;
         overflow: hidden;
+        padding: 8px;
     }
 
     .logo-placeholder:hover {
@@ -76,15 +77,11 @@
         background: rgba(255,255,255,0.3);
     }
 
-    .logo-placeholder i {
-        font-size: 40px;
-        color: white;
-    }
-
     .logo-placeholder img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
+        border-radius: 50%;
     }
 
     .header-text h1 {
@@ -301,6 +298,94 @@
         margin-top: 5px;
     }
 
+    /* Barre de recherche et filtres */
+    .search-sort-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .search-box {
+        flex: 2;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #0a9396;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #0a9396;
+        box-shadow: 0 0 0 3px rgba(10,147,150,0.1);
+    }
+
+    .sort-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .sort-controls select, .per-page-select {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .sort-controls select:focus, .per-page-select:focus {
+        outline: none;
+        border-color: #0a9396;
+    }
+
+    .sort-btn {
+        background: white;
+        border: 2px solid #e0e0e0;
+        padding: 10px 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sort-btn:hover {
+        border-color: #0a9396;
+        background: #f0f9fa;
+    }
+
+    .sort-btn.active {
+        background: #0a9396;
+        color: white;
+        border-color: #0a9396;
+    }
+
     /* Tableau */
     .table-container {
         overflow-x: auto;
@@ -398,6 +483,59 @@
     .btn-delete:hover {
         background: #c0392b;
         transform: scale(1.02);
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .pagination button {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        background: white;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .pagination button:hover:not(:disabled) {
+        background: #0a9396;
+        color: white;
+        border-color: #0a9396;
+    }
+
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination .page-info {
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        color: #005f73;
+        font-weight: 500;
+    }
+
+    .per-page-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .per-page-container label {
+        font-size: 0.85rem;
+        color: #005f73;
+        font-weight: 500;
     }
 
     /* Message vide */
@@ -565,6 +703,19 @@
         .button-group {
             flex-direction: column;
         }
+
+        .search-sort-container {
+            flex-direction: column;
+        }
+
+        .sort-controls {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .per-page-container {
+            margin-left: 0;
+        }
     }
 </style>
 </head>
@@ -572,7 +723,7 @@
 <header>
     <div class="header-container">
         <div class="logo-placeholder" id="logoPlaceholder">
-            <i class="fas fa-sailboat"></i>
+            <img src="images.png" alt="Logo Le Groupe Voilez Vous" id="logoImg">
         </div>
         <div class="header-text">
             <h1><i class="fas fa-chart-line"></i> Gestion des Cotisations</h1>
@@ -646,6 +797,28 @@
         </div>
     </div>
 
+    <!-- Barre de recherche et tri -->
+    <div class="search-sort-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Rechercher par nom ou prénom...">
+        </div>
+        <div class="sort-controls">
+            <button class="sort-btn" id="sortAlphaBtn">
+                <i class="fas fa-sort-alpha-down"></i> A → Z
+            </button>
+            <button class="sort-btn" id="sortAlphaDescBtn">
+                <i class="fas fa-sort-alpha-up"></i> Z → A
+            </button>
+            <button class="sort-btn" id="sortDateAscBtn">
+                <i class="fas fa-calendar-alt"></i> Date ↑
+            </button>
+            <button class="sort-btn" id="sortDateDescBtn">
+                <i class="fas fa-calendar-alt"></i> Date ↓
+            </button>
+        </div>
+    </div>
+
     <!-- Liste des membres -->
     <div class="table-container">
         <table id="tableMembres">
@@ -664,6 +837,24 @@
                 <!-- Les cotisations seront injectées ici -->
             </tbody>
         </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <div class="per-page-container">
+            <label>Afficher :</label>
+            <select id="perPageSelect" class="per-page-select">
+                <option value="10">10 par page</option>
+                <option value="20" selected>20 par page</option>
+                <option value="50">50 par page</option>
+                <option value="100">100 par page</option>
+            </select>
+        </div>
+        <div>
+            <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i> Précédent</button>
+            <span class="page-info" id="pageInfo">Page 1 / 1</span>
+            <button id="nextPageBtn" disabled>Suivant <i class="fas fa-chevron-right"></i></button>
+        </div>
     </div>
 </main>
 
@@ -719,8 +910,15 @@
 
     // Variables globales
     let cotisations = [];
+    let filteredCotisations = [];
     let pendingDeleteId = null;
     let pendingDeleteAll = false;
+    
+    // Variables de pagination et tri
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let currentSort = 'dateDesc';
+    let searchTerm = '';
 
     // Éléments DOM
     const form = document.getElementById('cotisationForm');
@@ -732,6 +930,42 @@
     const deleteAllBtn = document.getElementById('deleteAllBtn');
     const modal = document.getElementById('confirmModal');
     const loader = document.getElementById('loader');
+    const searchInput = document.getElementById('searchInput');
+    const sortAlphaBtn = document.getElementById('sortAlphaBtn');
+    const sortAlphaDescBtn = document.getElementById('sortAlphaDescBtn');
+    const sortDateAscBtn = document.getElementById('sortDateAscBtn');
+    const sortDateDescBtn = document.getElementById('sortDateDescBtn');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    const perPageSelect = document.getElementById('perPageSelect');
+    const logoImg = document.getElementById('logoImg');
+
+    // Fonction pour changer le logo (upload)
+    logoImg.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    logoImg.src = event.target.result;
+                    localStorage.setItem('customLogo', event.target.result);
+                    showNotification('Logo modifié avec succès !', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        input.click();
+    });
+
+    // Charger le logo personnalisé s'il existe
+    const savedLogo = localStorage.getItem('customLogo');
+    if (savedLogo) {
+        logoImg.src = savedLogo;
+    }
 
     // Fonction pour afficher le loader
     function showLoader() {
@@ -792,21 +1026,67 @@
         nonPayesSpan.textContent = nonPayes;
     }
 
-    // Afficher les cotisations dans le tableau
-    function afficherCotisations() {
-        tableBody.innerHTML = '';
+    // Fonction de recherche
+    function filterBySearch() {
+        if (!searchTerm.trim()) {
+            filteredCotisations = [...cotisations];
+        } else {
+            const term = searchTerm.toLowerCase().trim();
+            filteredCotisations = cotisations.filter(c => 
+                c.nom.toLowerCase().includes(term) || 
+                c.prenom.toLowerCase().includes(term)
+            );
+        }
+        sortCotisations();
+    }
 
-        if (cotisations.length === 0) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                <i class="fas fa-info-circle"></i> Aucune cotisation enregistrée. Ajoutez-en une !
-               </td>`;
-            tableBody.appendChild(tr);
-            updateStats();
+    // Fonction de tri
+    function sortCotisations() {
+        switch(currentSort) {
+            case 'alphaAsc':
+                filteredCotisations.sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`));
+                break;
+            case 'alphaDesc':
+                filteredCotisations.sort((a, b) => `${b.nom} ${b.prenom}`.localeCompare(`${a.nom} ${a.prenom}`));
+                break;
+            case 'dateAsc':
+                filteredCotisations.sort((a, b) => new Date(a.date) - new Date(b.date));
+                break;
+            case 'dateDesc':
+                filteredCotisations.sort((a, b) => new Date(b.date) - new Date(a.date));
+                break;
+            default:
+                filteredCotisations.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+        currentPage = 1;
+        displayPaginatedData();
+    }
+
+    // Afficher les données paginées
+    function displayPaginatedData() {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = filteredCotisations.slice(startIndex, endIndex);
+        
+        displayTableData(paginatedItems);
+        updatePaginationControls();
+    }
+
+    // Afficher les données du tableau
+    function displayTableData(data) {
+        if (data.length === 0) {
+            tableBody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="7">
+                        <i class="fas fa-info-circle"></i> Aucun résultat trouvé
+                    </td>
+                </tr>
+            `;
             return;
         }
 
-        cotisations.forEach((cotisation, index) => {
+        tableBody.innerHTML = '';
+        data.forEach(cotisation => {
             const tr = document.createElement('tr');
             const montantNum = parseFloat(cotisation.montant);
             
@@ -843,8 +1123,15 @@
                 }
             });
         });
+    }
 
-        updateStats();
+    // Mettre à jour les contrôles de pagination
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(filteredCotisations.length / itemsPerPage);
+        pageInfo.textContent = `Page ${currentPage} / ${totalPages || 1}`;
+        
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
     }
 
     // Marquer une cotisation comme payée
@@ -944,13 +1231,11 @@
         showNotification('Génération du PDF en cours...', 'info');
         
         try {
-            // Créer un élément temporaire pour le PDF
             const pdfContent = document.createElement('div');
             pdfContent.style.padding = '20px';
             pdfContent.style.background = 'white';
             pdfContent.style.fontFamily = 'Inter, sans-serif';
             
-            // Calculer les statistiques
             let total = 0;
             let payes = 0;
             let nonPayes = 0;
@@ -965,106 +1250,53 @@
                 }
             });
             
-            // Construire le contenu HTML pour le PDF
             pdfContent.innerHTML = `
-                <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #0a9396;">
-                    <h1 style="color: #005f73; margin-bottom: 10px;">Le Groupe Voilez Vous</h1>
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #005f73;">Le Groupe Voilez Vous</h1>
                     <h2 style="color: #0a9396;">Rapport des Cotisations</h2>
-                    <p style="color: #666;">Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+                    <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
                 </div>
-                
-                <div style="display: flex; justify-content: space-around; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${total.toLocaleString()} FCFA</div>
-                        <div style="font-size: 12px; color: #666;">Total collecté</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${payes}</div>
-                        <div style="font-size: 12px; color: #666;">Membres à jour</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${nonPayes}</div>
-                        <div style="font-size: 12px; color: #666;">Membres non payés</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #005f73;">${cotisations.length}</div>
-                        <div style="font-size: 12px; color: #666;">Total membres</div>
-                    </div>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
+                    <div><strong>Total:</strong> ${total.toLocaleString()} FCFA</div>
+                    <div><strong>Payés:</strong> ${payes}</div>
+                    <div><strong>Non payés:</strong> ${nonPayes}</div>
+                    <div><strong>Total membres:</strong> ${cotisations.length}</div>
                 </div>
-                
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="background-color: #94d2bd;">
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Nom</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Prénom</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Montant (FCFA)</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Date</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Moyen de paiement</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Statut</th>
-                        </tr>
-                    </thead>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead><tr style="background:#94d2bd;">
+                        <th style="border:1px solid #ddd; padding:8px;">Nom</th>
+                        <th style="border:1px solid #ddd; padding:8px;">Prénom</th>
+                        <th style="border:1px solid #ddd; padding:8px;">Montant</th>
+                        <th style="border:1px solid #ddd; padding:8px;">Date</th>
+                        <th style="border:1px solid #ddd; padding:8px;">Statut</th>
+                    </tr></thead>
                     <tbody>
-                        ${cotisations.map(cotisation => `
+                        ${cotisations.map(c => `
                             <tr>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.nom)}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.prenom)}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${parseFloat(cotisation.montant).toLocaleString()}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(cotisation.date)}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.moyen)}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${cotisation.payé ? 'Payé' : 'Non payé'}</td>
+                                <td style="border:1px solid #ddd; padding:8px;">${escapeHtml(c.nom)}</td>
+                                <td style="border:1px solid #ddd; padding:8px;">${escapeHtml(c.prenom)}</td>
+                                <td style="border:1px solid #ddd; padding:8px;">${parseFloat(c.montant).toLocaleString()} FCFA</td>
+                                <td style="border:1px solid #ddd; padding:8px;">${formatDate(c.date)}</td>
+                                <td style="border:1px solid #ddd; padding:8px;">${c.payé ? 'Payé' : 'Non payé'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
-                
-                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999;">
-                    <p>Document généré automatiquement - Le Groupe Voilez Vous</p>
-                    <p>${new Date().getFullYear()} - Tous droits réservés</p>
-                </div>
             `;
             
             document.body.appendChild(pdfContent);
-            
             const { jsPDF } = window.jspdf;
-            const canvas = await html2canvas(pdfContent, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            
+            const canvas = await html2canvas(pdfContent, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-            
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const imgWidth = 210;
-            const pageHeight = 297;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-            
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-            }
-            
-            const now = new Date();
-            const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
-            pdf.save(`cotisations_voilez_vous_${dateStr}.pdf`);
-            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`cotisations_voilez_vous_${Date.now()}.pdf`);
             document.body.removeChild(pdfContent);
-            
-            showNotification(`PDF exporté avec succès ! ${cotisations.length} cotisations`, 'success');
+            showNotification('PDF exporté avec succès !', 'success');
         } catch (error) {
-            console.error('Erreur lors de l\'export PDF:', error);
-            showNotification('Erreur lors de la génération du PDF', 'error');
+            showNotification('Erreur lors de l\'export PDF', 'error');
         }
     }
     
@@ -1115,25 +1347,79 @@
                 cotisations = Object.keys(data).map(key => ({
                     id: key,
                     ...data[key]
-                })).sort((a, b) => {
-                    // Trier par date de création décroissante
-                    if (a.createdAt && b.createdAt) {
-                        return new Date(b.createdAt) - new Date(a.createdAt);
-                    }
-                    return 0;
-                });
+                })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             }
             
-            afficherCotisations();
+            updateStats();
+            filterBySearch();
             hideLoader();
         }, (error) => {
-            console.error('Erreur lors de la lecture des données:', error);
+            console.error('Erreur:', error);
             showNotification('Erreur de connexion à Firebase', 'error');
             hideLoader();
         });
     }
     
-    // Événements
+    // Événements de recherche et tri
+    searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        filterBySearch();
+    });
+    
+    sortAlphaBtn.addEventListener('click', () => {
+        currentSort = 'alphaAsc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortAlphaDescBtn.addEventListener('click', () => {
+        currentSort = 'alphaDesc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortDateAscBtn.addEventListener('click', () => {
+        currentSort = 'dateAsc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortDateDescBtn.addEventListener('click', () => {
+        currentSort = 'dateDesc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    function updateActiveSortButton() {
+        [sortAlphaBtn, sortAlphaDescBtn, sortDateAscBtn, sortDateDescBtn].forEach(btn => btn.classList.remove('active'));
+        if (currentSort === 'alphaAsc') sortAlphaBtn.classList.add('active');
+        if (currentSort === 'alphaDesc') sortAlphaDescBtn.classList.add('active');
+        if (currentSort === 'dateAsc') sortDateAscBtn.classList.add('active');
+        if (currentSort === 'dateDesc') sortDateDescBtn.classList.add('active');
+    }
+    
+    // Pagination
+    perPageSelect.addEventListener('change', (e) => {
+        itemsPerPage = parseInt(e.target.value);
+        currentPage = 1;
+        displayPaginatedData();
+    });
+    
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPaginatedData();
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredCotisations.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayPaginatedData();
+        }
+    });
+    
     exportPDFBtn.addEventListener('click', exporterPDF);
     deleteAllBtn.addEventListener('click', () => {
         if (cotisations.length === 0) {
@@ -1150,12 +1436,11 @@
     document.getElementById('modalCancelBtn').addEventListener('click', fermerModal);
     
     window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            fermerModal();
-        }
+        if (e.target === modal) fermerModal();
     });
     
     // Initialisation
+    updateActiveSortButton();
     listenToFirebase();
 </script>
 </body>
