@@ -1,2346 +1,1007 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sunu Nata - Gestion Tontine</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Gestion des Cotisations - Le Groupe Voilez Vous</title>
+<!-- Font Awesome pour les icônes -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<!-- Google Fonts pour une typographie moderne -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<!-- jsPDF et html2canvas pour l'export PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #f0f2f5 0%, #e8ecf1 100%);
-            padding: 16px 12px 40px 12px;
-            color: #1a2c3e;
-            min-height: 100vh;
-        }
+    body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #e8f4f8 0%, #d1e9f0 100%);
+        min-height: 100vh;
+    }
 
-        .app-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+    /* Header avec effet de verre et logo */
+    header {
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        color: white;
+        padding: 20px 40px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        position: relative;
+        overflow: hidden;
+    }
 
-        @media (min-width: 768px) {
-            body {
-                padding: 20px 24px 40px 24px;
-            }
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-        }
+    header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        pointer-events: none;
+    }
 
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1400px;
-            }
-        }
+    .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
 
-        /* Login Modal Professionnel */
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
+    .logo-placeholder {
+        width: 80px;
+        height: 80px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+        border: 2px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        overflow: hidden;
+        padding: 8px;
+    }
+
+    .logo-placeholder:hover {
+        transform: scale(1.05);
+        background: rgba(255,255,255,0.3);
+    }
+
+    .logo-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 50%;
+    }
+
+    .header-text h1 {
+        font-size: 1.8rem;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
+    }
+
+    .header-text p {
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+
+    /* Loader */
+    .loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(5px);
+    }
+
+    .loader-content {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        min-width: 280px;
+    }
+
+    .loader-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e0e0e0;
+        border-top: 5px solid #0a9396;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    .loader-progress {
+        margin-top: 15px;
+        font-size: 0.9rem;
+        color: #005f73;
+        font-weight: 500;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 3px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Main content */
+    main {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    /* Cartes pour le formulaire et les stats */
+    .card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 30px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    }
+
+    .card h2 {
+        color: #005f73;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-left: 4px solid #0a9396;
+        padding-left: 15px;
+    }
+
+    .card h2 i {
+        color: #0a9396;
+        font-size: 1.3rem;
+    }
+
+    /* Formulaire */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #005f73;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.3s ease;
+        background: #fafafa;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #0a9396;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(10,147,150,0.1);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    button[type="submit"], .btn-export-pdf, .btn-delete-all {
+        padding: 12px 25px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: none;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    button[type="submit"] {
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        color: white;
+    }
+
+    button[type="submit"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,95,115,0.3);
+    }
+
+    .btn-export-pdf {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+    }
+
+    .btn-export-pdf:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(231,76,60,0.3);
+    }
+
+    .btn-delete-all {
+        background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+        color: white;
+    }
+
+    .btn-delete-all:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(127,140,141,0.3);
+    }
+
+    /* Cartes statistiques */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border: 1px solid rgba(10,147,150,0.2);
+    }
+
+    .stat-card i {
+        font-size: 2.5rem;
+        color: #0a9396;
+        margin-bottom: 10px;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #005f73;
+    }
+
+    .stat-card .stat-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    /* Barre de recherche et filtres */
+    .search-sort-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .search-box {
+        flex: 2;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #0a9396;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #0a9396;
+        box-shadow: 0 0 0 3px rgba(10,147,150,0.1);
+    }
+
+    .sort-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .sort-controls select, .per-page-select {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .sort-controls select:focus, .per-page-select:focus {
+        outline: none;
+        border-color: #0a9396;
+    }
+
+    .sort-btn {
+        background: white;
+        border: 2px solid #e0e0e0;
+        padding: 10px 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sort-btn:hover {
+        border-color: #0a9396;
+        background: #f0f9fa;
+    }
+
+    .sort-btn.active {
+        background: #0a9396;
+        color: white;
+        border-color: #0a9396;
+    }
+
+    /* Tableau */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 600px;
+    }
+
+    th {
+        background: linear-gradient(135deg, #94d2bd 0%, #74c7b5 100%);
+        color: #005f73;
+        padding: 15px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    th:first-child { border-radius: 15px 0 0 0; }
+    th:last-child { border-radius: 0 15px 0 0; }
+
+    td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        color: #2c3e50;
+    }
+
+    tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .paid {
+        color: #2ecc71;
+        font-weight: 700;
+        background: #d5f5e3;
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .not-paid {
+        color: #e74c3c;
+        font-weight: 700;
+        background: #fadbd8;
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .btn-pay {
+        background: #2ecc71;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-right: 5px;
+    }
+
+    .btn-pay:hover {
+        background: #27ae60;
+        transform: scale(1.02);
+    }
+
+    .btn-delete {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-delete:hover {
+        background: #c0392b;
+        transform: scale(1.02);
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .pagination button {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        background: white;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .pagination button:hover:not(:disabled) {
+        background: #0a9396;
+        color: white;
+        border-color: #0a9396;
+    }
+
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination .page-info {
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        color: #005f73;
+        font-weight: 500;
+    }
+
+    .per-page-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .per-page-container label {
+        font-size: 0.85rem;
+        color: #005f73;
+        font-weight: 500;
+    }
+
+    /* Message vide */
+    .empty-row td {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    /* Footer */
+    footer {
+        text-align: center;
+        padding: 20px;
+        color: #005f73;
+        font-size: 0.85rem;
+        margin-top: 40px;
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    .card, .stats-grid, .table-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    /* Notification */
+    .notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        color: #2c3e50;
+        padding: 15px 20px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+        border-left: 4px solid #2ecc71;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .notification.success {
+        border-left-color: #2ecc71;
+    }
+
+    .notification.error {
+        border-left-color: #e74c3c;
+    }
+
+    .notification.info {
+        border-left-color: #3498db;
+    }
+
+    /* Modal de confirmation */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 0;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 20px 20px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-header i {
+        font-size: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 20px;
+        color: #2c3e50;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .modal-btn-confirm {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .modal-btn-confirm:hover {
+        background: #c0392b;
+        transform: translateY(-2px);
+    }
+
+    .modal-btn-cancel {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .modal-btn-cancel:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .header-container {
             justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .login-card {
-            background: white;
-            border-radius: 40px;
-            padding: 40px 32px;
-            width: 90%;
-            max-width: 440px;
             text-align: center;
-            animation: slideUp 0.4s ease;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px);}
-            to { opacity: 1; transform: translateY(0);}
+        .card h2 {
+            font-size: 1.3rem;
         }
 
-        .login-header {
-            margin-bottom: 32px;
-        }
-
-        .login-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            font-size: 40px;
-            box-shadow: 0 8px 20px rgba(31, 110, 67, 0.3);
-        }
-
-        .login-card h2 {
-            color: #1f6e43;
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            color: #7c8ba0;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
-
-        .password-container {
-            position: relative;
-            width: 100%;
-            margin-bottom: 16px;
-        }
-
-        .password-container input {
-            width: 100%;
-            padding: 14px 18px;
-            padding-right: 50px;
-            border: 2px solid #e2edf2;
-            border-radius: 60px;
-            font-size: 1rem;
-            transition: all 0.2s;
-            background: #f8fafc;
-        }
-
-        .password-container input:focus {
-            outline: none;
-            border-color: #1f6e43;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(31, 110, 67, 0.1);
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            font-size: 1.2rem;
-            user-select: none;
-            color: #7c8ba0;
-            transition: color 0.2s;
-        }
-
-        .toggle-password:hover {
-            color: #1f6e43;
-        }
-
-        .login-card input[type="email"] {
-            width: 100%;
-            padding: 14px 18px;
-            margin-bottom: 16px;
-            border: 2px solid #e2edf2;
-            border-radius: 60px;
-            font-size: 1rem;
-            transition: all 0.2s;
-            background: #f8fafc;
-        }
-
-        .login-card input[type="email"]:focus {
-            outline: none;
-            border-color: #1f6e43;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(31, 110, 67, 0.1);
-        }
-
-        .login-card button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-            border: none;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .login-card button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(31, 110, 67, 0.3);
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 24px 0;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #e2edf2;
-        }
-
-        .divider span {
-            padding: 0 12px;
-            color: #7c8ba0;
+        th, td {
+            padding: 8px 10px;
             font-size: 0.85rem;
         }
 
-        .visitor-login-btn {
-            background: linear-gradient(135deg, #7c8ba0, #95a5a6);
-            margin-top: 0;
+        .btn-pay, .btn-delete {
+            padding: 5px 10px;
+            font-size: 0.75rem;
         }
 
-        .visitor-login-btn:hover {
-            background: linear-gradient(135deg, #6c7a8f, #8595a6);
-            box-shadow: 0 8px 20px rgba(124, 139, 160, 0.3);
+        .button-group {
+            flex-direction: column;
         }
 
-        .login-card .error {
-            color: #bc4742;
-            margin-top: 16px;
-            font-size: 0.85rem;
-            padding: 8px;
-            background: #fff0ee;
-            border-radius: 12px;
+        .search-sort-container {
+            flex-direction: column;
         }
 
-        .admin-badge {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(31,110,67,0.3);
-        }
-
-        .visitor-badge {
-            background: linear-gradient(135deg, #7c8ba0, #95a5a6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logout-btn, .login-btn-header {
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .logout-btn {
-            background: #e67e22;
-            color: white;
-        }
-
-        .logout-btn:hover {
-            background: #f39c12;
-            transform: translateY(-2px);
-        }
-
-        .login-btn-header {
-            background: #1f6e43;
-            color: white;
-        }
-
-        .login-btn-header:hover {
-            background: #2d8a55;
-            transform: translateY(-2px);
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-            background: white;
-            padding: 8px;
-            border-radius: 60px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 8px;
-            z-index: 20;
-            backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.95);
-        }
-
-        @media (max-width: 480px) {
-            .nav-tabs {
-                gap: 4px;
-                padding: 6px;
-            }
-            .nav-btn {
-                padding: 10px 4px;
-                font-size: 0.75rem;
-            }
-        }
-
-        .nav-btn {
-            flex: 1;
-            text-align: center;
-            padding: 12px 8px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            border-radius: 50px;
-            background: transparent;
-            border: none;
-            color: #3a5a78;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .nav-btn.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-            box-shadow: 0 2px 8px rgba(31,110,67,0.3);
-        }
-
-        .page {
-            display: none;
-            animation: fade 0.3s ease;
-        }
-
-        .page.active-page {
-            display: block;
-        }
-
-        @keyframes fade {
-            from { opacity: 0; transform: translateY(10px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
-
-        .card {
-            background: white;
-            border-radius: 28px;
-            padding: 24px 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .card:hover {
-            box-shadow: 0 12px 32px rgba(0,0,0,0.1);
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #0b3b2f;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        h3 {
-            font-size: 1.2rem;
-            margin-bottom: 16px;
-            color: #1f6e43;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin: 16px 0;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #f8fafc, #ffffff);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #e2edf2;
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1f6e43;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: #7c8ba0;
-            margin-top: 8px;
-        }
-
-        .member-row {
-            display: flex;
+        .sort-controls {
+            width: 100%;
             justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            border-radius: 60px;
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border: 1px solid #e2edf2;
-            transition: all 0.2s;
         }
 
-        .member-row:hover {
-            transform: translateX(4px);
-            border-color: #1f6e43;
-            box-shadow: 0 2px 8px rgba(31,110,67,0.1);
-        }
-
-        .member-info {
-            flex: 2;
-        }
-
-        .member-name {
-            font-weight: 700;
-            font-size: 1rem;
-        }
-
-        .member-phone {
-            font-size: 0.8rem;
-            color: #7c8ba0;
-        }
-
-        .member-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .delete-btn, .details-btn, .add-btn, .export-btn {
-            border: none;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .delete-btn {
-            background: #fff0ee;
-            color: #bc4742;
-        }
-
-        .delete-btn:hover {
-            background: #bc4742;
-            color: white;
-            transform: scale(1.05);
-        }
-
-        .details-btn {
-            background: #eef2f9;
-            color: #1f6e43;
-        }
-
-        .details-btn:hover {
-            background: #1f6e43;
-            color: white;
-            transform: scale(1.05);
-        }
-
-        .export-btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
+        .per-page-container {
             margin-left: 0;
         }
-
-        .export-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .add-btn {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        input, select {
-            padding: 12px 18px;
-            border-radius: 60px;
-            border: 2px solid #e2edf2;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #1f6e43;
-        }
-
-        button {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 60px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(31,110,67,0.3);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .search-filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .search-box {
-            flex: 2;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding-left: 45px;
-        }
-
-        .search-box::before {
-            content: "🔍";
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.1rem;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            background: #f0f4f8;
-            color: #3a5a78;
-            padding: 10px 20px;
-        }
-
-        .filter-btn.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 24px;
-            flex-wrap: wrap;
-        }
-
-        .page-btn {
-            background: #f0f4f8;
-            color: #3a5a78;
-            padding: 8px 14px;
-            min-width: 40px;
-        }
-
-        .page-btn.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .page-btn:hover:not(.active) {
-            background: #e2edf2;
-            transform: translateY(0);
-        }
-
-        .payment-table {
-            margin-top: 12px;
-            border-radius: 20px;
-            overflow-x: auto;
-        }
-
-        .payment-header, .payment-line {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr;
-            padding: 12px 16px;
-        }
-
-        @media (max-width: 600px) {
-            .payment-header, .payment-line {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-        }
-
-        .payment-header {
-            background: #eef2f5;
-            font-weight: 700;
-            font-size: 0.85rem;
-        }
-
-        .payment-line {
-            border-bottom: 1px solid #e9edf2;
-            background: white;
-        }
-
-        .pay-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .btn-paid, .btn-unpaid {
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            border-radius: 40px;
-        }
-
-        .btn-paid { background: #1f6e43; }
-        .btn-unpaid { background: #bc4742; }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .status-paid { background: #dff0e5; color: #1f6e43; }
-        .status-unpaid { background: #ffe0db; color: #bc4742; }
-
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .year-filter {
-            background: #f0f4f8;
-            border-radius: 40px;
-            padding: 8px 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .year-filter.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .month-filter {
-            background: #f0f4f8;
-            border-radius: 40px;
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .month-filter.active {
-            background: linear-gradient(135deg, #e67e22, #f39c12);
-            color: white;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            max-width: 95%;
-            width: 700px;
-            border-radius: 32px;
-            padding: 24px;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-
-        /* Confirmation Modal Styles */
-        .confirm-modal {
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .confirm-modal h3 {
-            color: #bc4742;
-            margin-bottom: 16px;
-        }
-
-        .confirm-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 24px;
-        }
-
-        .confirm-actions button {
-            flex: 1;
-        }
-
-        .confirm-cancel {
-            background: #7c8ba0;
-        }
-
-        .confirm-cancel:hover {
-            background: #6c7a8f;
-        }
-
-        .confirm-delete {
-            background: #bc4742;
-        }
-
-        .confirm-delete:hover {
-            background: #a03d38;
-        }
-
-        .sync-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #1f6e43;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .small-text { font-size: 0.75rem; color: #7c8ba0; }
-        .text-center { text-align: center; }
-        .mt-2 { margin-top: 12px; }
-        .mb-2 { margin-bottom: 12px; }
         
-        .info-message {
-            background: linear-gradient(135deg, #e3f2fd, #bbdef5);
-            color: #1565c0;
-            padding: 12px 16px;
-            border-radius: 16px;
-            margin-bottom: 16px;
-            text-align: center;
+        .notification {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
             font-size: 0.85rem;
         }
-        
-        .admin-only { display: none; }
-        .admin-only.visible { display: block; }
-        .admin-only-inline { display: none; }
-        .admin-only-inline.visible { display: inline-block; }
-
-        .month-section {
-            margin-bottom: 20px;
-            border: 1px solid #e2edf2;
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .month-header {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-            padding: 12px 16px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .month-content {
-            padding: 8px 0;
-        }
-
-        .month-content.collapsed { display: none; }
-
-        .weekday-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 16px;
-            border-bottom: 1px solid #f0f2f5;
-        }
-
-        .year-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #7c8ba0;
-        }
-
-        .result-count {
-            font-size: 0.85rem;
-            color: #7c8ba0;
-            margin-bottom: 12px;
-        }
-
-        .debt-amount {
-            font-weight: 800;
-            color: #e67e22;
-        }
-
-        .badge-warning {
-            background: #ffe0db;
-            color: #e67e22;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            margin-left: 8px;
-        }
-
-        .ranking-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        @media (min-width: 768px) {
-            .ranking-container {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .ranking-box {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 16px;
-        }
-
-        .ranking-title {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1f6e43;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .debtor-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #e2edf2;
-        }
-
-        .debtor-info {
-            flex: 1;
-        }
-
-        .debtor-name {
-            font-weight: 600;
-        }
-
-        .debtor-details {
-            font-size: 0.7rem;
-            color: #7c8ba0;
-        }
-
-        .debtor-amount {
-            font-weight: 700;
-            color: #e67e22;
-        }
-
-        .stats-filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .stats-filter-btn {
-            background: #f0f4f8;
-            color: #3a5a78;
-            padding: 10px 24px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .stats-filter-btn.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .stats-period-select {
-            padding: 10px 20px;
-            border-radius: 40px;
-            border: 2px solid #e2edf2;
-            background: white;
-            font-weight: 500;
-        }
-
-        .filter-indicator {
-            background: #eef2f5;
-            border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .clear-stats-filter {
-            background: #7c8ba0;
-            padding: 6px 12px;
-            font-size: 0.7rem;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-
-        .stats-search-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 20px;
-        }
-
-        .stats-search-box {
-            flex: 2;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .stats-search-box input {
-            width: 100%;
-            padding: 12px 18px;
-            padding-left: 40px;
-            border-radius: 40px;
-            border: 2px solid #e2edf2;
-        }
-
-        .stats-search-box::before {
-            content: "🔍";
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1rem;
-        }
-
-        .sort-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .sort-btn {
-            background: #f0f4f8;
-            color: #3a5a78;
-            padding: 10px 16px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .sort-btn.active {
-            background: linear-gradient(135deg, #1f6e43, #2d8a55);
-            color: white;
-        }
-
-        .ranking-stats {
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            background: #eef2f5;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            color: #3a5a78;
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
-<div class="app-container">
-    <div id="adminHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-        <div id="userInfo"></div>
-        <div id="headerButtons" style="display: flex; gap: 8px;">
-            <button id="exportAllPdfBtn" class="export-btn" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">📄 Exporter tout en PDF</button>
-            <button id="showLoginBtnHeader" class="login-btn-header hidden">🔐 Connexion Admin</button>
-            <button id="logoutBtn" class="logout-btn hidden">🚪 Déconnexion</button>
+<header>
+    <div class="header-container">
+        <div class="logo-placeholder" id="logoPlaceholder">
+            <img src="https://via.placeholder.com/80x80/0a9396/ffffff?text=VOILE" alt="Logo Le Groupe Voilez Vous" id="logoImg">
+        </div>
+        <div class="header-text">
+            <h1><i class="fas fa-chart-line"></i> Gestion des Cotisations</h1>
+            <p>Le Groupe Voilez Vous • Suivez facilement les paiements de vos membres</p>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- Formulaire d'ajout -->
+    <div class="card">
+        <h2><i class="fas fa-plus-circle"></i> Ajouter une cotisation</h2>
+        <form id="cotisationForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Nom</label>
+                    <input type="text" id="nom" placeholder="Nom" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Prénom</label>
+                    <input type="text" id="prenom" placeholder="Prénom" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-money-bill-wave"></i> Montant (FCFA)</label>
+                    <input type="number" id="montant" placeholder="Montant" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-alt"></i> Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-credit-card"></i> Moyen de paiement</label>
+                    <select id="moyen" required>
+                        <option value="">Sélectionnez</option>
+                        <option value="Wave">Wave</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Espèces">Espèces</option>
+                    </select>
+                </div>
+            </div>
+            <div class="button-group">
+                <button type="submit">
+                    <i class="fas fa-save"></i> Enregistrer la cotisation
+                </button>
+                <button type="button" class="btn-export-pdf" id="exportPDFBtn">
+                    <i class="fas fa-file-pdf"></i> Exporter tout en PDF
+                </button>
+                <button type="button" class="btn-delete-all" id="deleteAllBtn">
+                    <i class="fas fa-trash-alt"></i> Supprimer tout
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistiques améliorées -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fas fa-chart-simple"></i>
+            <div class="stat-value"><span id="total">0</span> FCFA</div>
+            <div class="stat-label">Total collecté</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-check-circle"></i>
+            <div class="stat-value"><span id="payes">0</span></div>
+            <div class="stat-label">Membres à jour</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-times-circle"></i>
+            <div class="stat-value"><span id="nonPayes">0</span></div>
+            <div class="stat-label">Membres non payés</div>
         </div>
     </div>
 
-    <div class="nav-tabs">
-        <button class="nav-btn active" data-page="home">🏠 Accueil</button>
-        <button class="nav-btn" data-page="members">👥 Membres</button>
-        <button class="nav-btn" data-page="sessions">📆 Sessions</button>
-        <button class="nav-btn" data-page="stats">📊 Stats</button>
-    </div>
-
-    <div id="home" class="page active-page">
-        <div class="card">
-            <h2>🏦 Sunu Nata <span style="background:linear-gradient(135deg,#1f6e43,#2d8a55);color:white;padding:4px 12px;border-radius:20px;font-size:0.75rem;">2024-2031</span></h2>
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-value" id="homeTotalMoney">0</div><div class="stat-label">Total collecté (FCFA)</div></div>
-                <div class="stat-card"><div class="stat-value" id="homeMembersCount">0</div><div class="stat-label">Membres</div></div>
-                <div class="stat-card"><div class="stat-value" id="homeSessionsCount">0</div><div class="stat-label">Sessions</div></div>
-            </div>
-            <div class="small-text mt-2">☁️ Données synchronisées avec Firebase</div>
+    <!-- Barre de recherche et tri -->
+    <div class="search-sort-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Rechercher par nom ou prénom...">
+        </div>
+        <div class="sort-controls">
+            <button class="sort-btn" id="sortAlphaBtn">
+                <i class="fas fa-sort-alpha-down"></i> A → Z
+            </button>
+            <button class="sort-btn" id="sortAlphaDescBtn">
+                <i class="fas fa-sort-alpha-up"></i> Z → A
+            </button>
+            <button class="sort-btn" id="sortDateAscBtn">
+                <i class="fas fa-calendar-alt"></i> Date ↑
+            </button>
+            <button class="sort-btn" id="sortDateDescBtn">
+                <i class="fas fa-calendar-alt"></i> Date ↓
+            </button>
         </div>
     </div>
 
-    <div id="members" class="page">
-        <div class="card">
-            <h2>👥 Membres</h2>
-            
-            <div class="search-filter-bar">
-                <div class="search-box">
-                    <input type="text" id="searchMemberInput" placeholder="🔍 Rechercher par nom, prénom ou téléphone...">
-                </div>
-                <div class="filter-group">
-                    <button id="sortAZBtn" class="filter-btn active">A → Z</button>
-                    <button id="SortZABtn" class="filter-btn">Z → A</button>
-                </div>
-            </div>
-            
-            <div id="membersListContainer">
-                <div id="membersList"><div class="loading">Chargement...</div></div>
-                <div id="pagination" class="pagination"></div>
-            </div>
-            
-            <div id="addMemberForm" class="admin-only">
-                <div class="info-message">🔐 Mode Admin : Vous pouvez ajouter des membres</div>
-                <div class="form-row">
-                    <input type="text" id="memberNom" placeholder="Nom *">
-                    <input type="text" id="memberPrenom" placeholder="Prénom *">
-                    <input type="tel" id="memberTel" placeholder="Téléphone">
-                    <button id="addMemberBtn" class="add-btn">➕ Ajouter un membre</button>
-                </div>
-            </div>
-        </div>
+    <!-- Liste des membres -->
+    <div class="table-container">
+        <table id="tableMembres">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-user"></i> Nom</th>
+                    <th><i class="fas fa-user"></i> Prénom</th>
+                    <th><i class="fas fa-money-bill"></i> Montant</th>
+                    <th><i class="fas fa-calendar"></i> Date</th>
+                    <th><i class="fas fa-credit-card"></i> Moyen</th>
+                    <th><i class="fas fa-flag-checkered"></i> Statut</th>
+                    <th><i class="fas fa-cog"></i> Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Les cotisations seront injectées ici -->
+            </tbody>
+        </table>
     </div>
 
-    <div id="sessions" class="page">
-        <div class="card">
-            <h2>📆 Gérer les paiements <span style="background:linear-gradient(135deg,#1f6e43,#2d8a55);color:white;padding:4px 12px;border-radius:20px;font-size:0.75rem;">2024 → 2031</span></h2>
-            <div id="adminSessionControls" class="admin-only">
-                <div class="info-message">🔐 Mode Admin : Vous pouvez modifier les paiements et générer des sessions</div>
-                <div class="form-row">
-                    <button id="generateSessionsBtn">🔄 Générer tous les Jeudis 2024-2031</button>
-                </div>
-                <div class="small-text mt-2" style="color: #1f6e43;">
-                    📅 Cette action générera toutes les sessions des jeudis du 1er janvier 2024 au 31 décembre 2031
-                </div>
-                <hr>
-            </div>
-            <div class="filter-bar" id="yearFilterBar"></div>
-            <select id="sessionSelect" style="width:100%; margin-bottom: 12px;">
-                <option value="">-- Choisir une session --</option>
+    <!-- Pagination -->
+    <div class="pagination">
+        <div class="per-page-container">
+            <label>Afficher :</label>
+            <select id="perPageSelect" class="per-page-select">
+                <option value="10">10 par page</option>
+                <option value="20" selected>20 par page</option>
+                <option value="50">50 par page</option>
+                <option value="100">100 par page</option>
             </select>
-            <div id="sessionPaymentsTable"></div>
+        </div>
+        <div>
+            <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i> Précédent</button>
+            <span class="page-info" id="pageInfo">Page 1 / 1</span>
+            <button id="nextPageBtn" disabled>Suivant <i class="fas fa-chevron-right"></i></button>
         </div>
     </div>
+</main>
 
-    <div id="stats" class="page">
-        <div class="card">
-            <h2>📊 Statistiques <span style="background:linear-gradient(135deg,#1f6e43,#2d8a55);color:white;padding:4px 12px;border-radius:20px;font-size:0.75rem;">2024-2031</span></h2>
-            
-            <div class="stats-filter-bar">
-                <button id="statsAllBtn" class="stats-filter-btn active">📅 Toutes périodes</button>
-                <button id="statsYearBtn" class="stats-filter-btn">📆 Par année</button>
-                <button id="statsMonthBtn" class="stats-filter-btn">📅 Par mois</button>
-                <select id="statsYearSelect" class="stats-period-select" style="display: none;">
-                    <option value="">Sélectionner une année</option>
-                </select>
-                <select id="statsMonthSelect" class="stats-period-select" style="display: none;">
-                    <option value="">Sélectionner un mois</option>
-                </select>
-                <div id="statsFilterInfo" class="filter-indicator" style="display: none;">
-                    <span id="statsFilterText"></span>
-                    <span id="clearStatsFilter" class="clear-stats-filter">❌ Effacer</span>
-                </div>
-            </div>
-            
-            <div class="stats-search-bar">
-                <div class="stats-search-box">
-                    <input type="text" id="statsSearchInput" placeholder="🔍 Rechercher un membre...">
-                </div>
-                <div class="sort-group">
-                    <button id="sortByNameAsc" class="sort-btn" data-sort="name_asc">🔤 A → Z</button>
-                    <button id="sortByNameDesc" class="sort-btn" data-sort="name_desc">🔤 Z → A</button>
-                    <button id="sortByAmountAsc" class="sort-btn" data-sort="amount_asc">💰 Montant ↑</button>
-                    <button id="sortByAmountDesc" class="sort-btn active" data-sort="amount_desc">💰 Montant ↓</button>
-                    <button id="sortByUnpaidAsc" class="sort-btn" data-sort="unpaid_asc">❌ Impayées ↑</button>
-                    <button id="sortByUnpaidDesc" class="sort-btn" data-sort="unpaid_desc">❌ Impayées ↓</button>
-                </div>
-            </div>
-            
-            <div id="statsSummary"></div>
-        </div>
-        
-        <div class="card">
-            <div class="ranking-container">
-                <div class="ranking-box">
-                    <div class="ranking-title">
-                        🏆 Classement par contribution
-                        <span class="badge-warning">💰 Total versé</span>
-                    </div>
-                    <div id="rankingStats" class="ranking-stats"></div>
-                    <div id="rankingList"></div>
-                </div>
-                
-                <div class="ranking-box">
-                    <div class="ranking-title">
-                        📅 Dette par mois
-                        <span class="badge-warning">⚠️ À rembourser</span>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <select id="debtMonthSelect" style="width: 100%; padding: 8px 12px;">
-                            <option value="">-- Sélectionner un mois --</option>
-                        </select>
-                    </div>
-                    <div id="debtRankingList">
-                        <div class="text-center small-text" style="padding: 20px;">Sélectionnez un mois pour voir les dettes</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div id="syncStatus" class="sync-status">✅ Synchronisé</div>
+<footer>
+    <p><i class="fas fa-sailboat"></i> Le Groupe Voilez Vous • Gestion des cotisations • Tous droits réservés</p>
+</footer>
 
-<div id="loginModal" class="login-overlay">
-    <div class="login-card">
-        <div class="login-header">
-            <div class="login-logo">🏦</div>
-            <h2>Sunu Nata</h2>
-            <div class="login-subtitle">Gestion de tontine professionnelle</div>
+<!-- Modal de confirmation -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Confirmation de suppression</h3>
         </div>
-        <input type="email" id="loginEmail" placeholder="Adresse email">
-        <div class="password-container">
-            <input type="password" id="loginPassword" placeholder="Mot de passe">
-            <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
+        <div class="modal-body">
+            <p id="modalMessage">Êtes-vous sûr de vouloir supprimer cet élément ?</p>
         </div>
-        <button id="loginBtn">Se connecter</button>
-        
-        <div class="divider">
-            <span>ou</span>
-        </div>
-        
-        <button id="visitorLoginBtn" class="visitor-login-btn">👁️ Mode visiteur</button>
-        
-        <div id="loginError" class="error"></div>
-        <div class="small-text mt-2" style="color: #7c8ba0;">
-            🔐 Seuls les administrateurs peuvent modifier<br>
-            👁️ Les visiteurs peuvent consulter les données
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-cancel" id="modalCancelBtn">Annuler</button>
+            <button class="modal-btn modal-btn-confirm" id="modalConfirmBtn">Supprimer</button>
         </div>
     </div>
 </div>
 
-<script>
-    // Fonction pour afficher/masquer le mot de passe
-    window.togglePasswordVisibility = function() {
-        const passwordInput = document.getElementById('loginPassword');
-        const toggleIcon = document.querySelector('.toggle-password');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.textContent = '👁️';
-        }
-    };
-</script>
+<!-- Loader -->
+<div id="loader" class="loader" style="display: none;">
+    <div class="loader-content">
+        <div class="loader-spinner"></div>
+        <p id="loaderText">Chargement des données...</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="loader-progress" id="progressPercent">0%</div>
+    </div>
+</div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+    // Importation des modules Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
+    // Configuration Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyBVssQ6Q5mnRmMib7Ip_0jnbk4XdDCpJfc",
-        authDomain: "tontine-c6abe.firebaseapp.com",
-        projectId: "tontine-c6abe",
-        storageBucket: "tontine-c6abe.firebasestorage.app",
-        messagingSenderId: "113771469681",
-        appId: "1:113771469681:web:7ecc0bf22d9a3b6cb734d0",
-        measurementId: "G-PHJHD2P22M"
+        apiKey: "AIzaSyAP-AVagsoZR1rdbKrXR-2VqsjbH7H77uE",
+        authDomain: "voile-e7c97.firebaseapp.com",
+        databaseURL: "https://voile-e7c97-default-rtdb.firebaseio.com",
+        projectId: "voile-e7c97",
+        storageBucket: "voile-e7c97.firebasestorage.app",
+        messagingSenderId: "570833271871",
+        appId: "1:570833271871:web:b4c5129c0c6c99c1d18c8a"
     };
 
+    // Initialisation de Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const database = getDatabase(app);
+    const cotisationsRef = ref(database, 'cotisations');
+
+    // Variables globales
+    let cotisations = [];
+    let filteredCotisations = [];
+    let pendingDeleteId = null;
+    let pendingDeleteAll = false;
     
-    const FIXED_AMOUNT = 2000;
-    const ITEMS_PER_PAGE = 10;
-    
-    let members = [];
-    let sessions = [];
-    let payments = [];
-    let currentYearFilter = "all";
-    let currentUser = null;
-    let isAdmin = false;
-    let isSyncing = false;
-    let unsubscribe = null;
-    
-    let currentSearchTerm = "";
-    let currentSortOrder = "asc";
+    // Variables de pagination et tri
     let currentPage = 1;
-    let filteredMembers = [];
-    
-    let statsFilterType = "all";
-    let statsSelectedYear = null;
-    let statsSelectedMonth = null;
-    
-    let statsSearchTerm = "";
-    let statsSortType = "amount_desc";
-    let filteredRanking = [];
+    let itemsPerPage = 20;
+    let currentSort = 'dateDesc';
+    let searchTerm = '';
 
-    const ADMIN_UIDS = [
-        "6bZhaJ84pqYZHzmsSbTfMIuj4QV2",
-        "8nB4yM0qR3sU9wX2zA6cD7eF1gH2iJ",
-        "2cE6gI0kM4oQ8sU1wY5aB7dF9hJ3lN",
-        "7dF9hJ3lN5pR1tV3xZ7bD1fH4jL6nP"
-    ];
+    // Éléments DOM
+    const form = document.getElementById('cotisationForm');
+    const tableBody = document.getElementById('tableBody');
+    const totalSpan = document.getElementById('total');
+    const payesSpan = document.getElementById('payes');
+    const nonPayesSpan = document.getElementById('nonPayes');
+    const exportPDFBtn = document.getElementById('exportPDFBtn');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const modal = document.getElementById('confirmModal');
+    const loader = document.getElementById('loader');
+    const searchInput = document.getElementById('searchInput');
+    const sortAlphaBtn = document.getElementById('sortAlphaBtn');
+    const sortAlphaDescBtn = document.getElementById('sortAlphaDescBtn');
+    const sortDateAscBtn = document.getElementById('sortDateAscBtn');
+    const sortDateDescBtn = document.getElementById('sortDateDescBtn');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    const perPageSelect = document.getElementById('perPageSelect');
+    const logoImg = document.getElementById('logoImg');
+    const loaderText = document.getElementById('loaderText');
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
 
-    function checkIsAdmin(user) {
-        return user && ADMIN_UIDS.includes(user.uid);
+    // Fonction pour mettre à jour la progression
+    function updateProgress(percent, message) {
+        progressFill.style.width = `${percent}%`;
+        progressPercent.textContent = `${Math.round(percent)}%`;
+        if (message) loaderText.textContent = message;
     }
 
-    function toggleAdminElements(showAdmin) {
-        const adminElements = document.querySelectorAll('.admin-only');
-        const adminInlineElements = document.querySelectorAll('.admin-only-inline');
-        
-        adminElements.forEach(el => {
-            if (showAdmin) {
-                el.classList.add('visible');
-                el.style.display = 'block';
-            } else {
-                el.classList.remove('visible');
-                el.style.display = 'none';
-            }
-        });
-        
-        adminInlineElements.forEach(el => {
-            if (showAdmin) {
-                el.classList.add('visible');
-                el.style.display = 'inline-block';
-            } else {
-                el.classList.remove('visible');
-                el.style.display = 'none';
-            }
-        });
+    // Fonction pour afficher le loader
+    function showLoader(message = 'Chargement des données...') {
+        loaderText.textContent = message;
+        progressFill.style.width = '0%';
+        progressPercent.textContent = '0%';
+        loader.style.display = 'flex';
     }
 
-    function showConfirmModal(title, message, onConfirm) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content confirm-modal">
-                <h3>${title}</h3>
-                <p>${message}</p>
-                <div class="confirm-actions">
-                    <button class="confirm-cancel">Annuler</button>
-                    <button class="confirm-delete">Confirmer</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        modal.querySelector('.confirm-cancel').addEventListener('click', () => modal.remove());
-        modal.querySelector('.confirm-delete').addEventListener('click', () => {
-            onConfirm();
-            modal.remove();
-        });
+    // Fonction pour cacher le loader
+    function hideLoader() {
+        loader.style.display = 'none';
     }
 
-    function setupRealtimeListener() {
-        if (unsubscribe) unsubscribe();
-        
-        const docRef = doc(db, "tontine", "sunu_nata_data");
-        unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                members = data.members || [];
-                sessions = data.sessions || [];
-                payments = data.payments || [];
-                
-                sessions.forEach(s => {
-                    if (!s.year && s.id) s.year = parseInt(s.id.split('-')[0]);
-                });
-                
-                applyFiltersAndSort();
-                renderAll();
-                updateSyncStatus("success", "✅ Données chargées");
-            } else {
-                if (!isSyncing) initializeDefaultData();
-            }
-        }, (error) => {
-            console.error("Erreur de chargement:", error);
-            updateSyncStatus("error", "⚠️ Erreur de connexion");
-        });
-    }
-
-    function applyFiltersAndSort() {
-        let filtered = [...members];
-        
-        if (currentSearchTerm) {
-            const term = currentSearchTerm.toLowerCase();
-            filtered = filtered.filter(m => 
-                m.nom.toLowerCase().includes(term) ||
-                m.prenom.toLowerCase().includes(term) ||
-                (m.telephone && m.telephone.includes(term))
-            );
-        }
-        
-        filtered.sort((a, b) => {
-            const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
-            const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
-            if (currentSortOrder === "asc") {
-                return nameA.localeCompare(nameB);
-            } else {
-                return nameB.localeCompare(nameA);
-            }
-        });
-        
-        filteredMembers = filtered;
-        currentPage = 1;
-    }
-
-    function getPaginatedMembers() {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        const end = start + ITEMS_PER_PAGE;
-        return filteredMembers.slice(start, end);
-    }
-
-    function renderPagination() {
-        const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
-        const paginationDiv = document.getElementById("pagination");
-        
-        if (totalPages <= 1) {
-            paginationDiv.innerHTML = "";
-            return;
-        }
-        
-        let html = `<button class="page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>◀</button>`;
-        
-        for (let i = 1; i <= Math.min(totalPages, 5); i++) {
-            html += `<button class="page-btn ${currentPage === i ? 'active' : ''}" data-page="${i}">${i}</button>`;
-        }
-        
-        if (totalPages > 5) {
-            html += `<span>...</span>`;
-            html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
-        }
-        
-        html += `<button class="page-btn" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>`;
-        
-        paginationDiv.innerHTML = html;
-        
-        document.querySelectorAll('.page-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (btn.disabled) return;
-                const page = btn.dataset.page;
-                if (page === 'prev') currentPage--;
-                else if (page === 'next') currentPage++;
-                else currentPage = parseInt(page);
-                renderMembersPage();
-            });
-        });
-    }
-
-    function loginAsVisitor() {
-        document.getElementById("loginModal").style.display = "none";
-    }
-
-    onAuthStateChanged(auth, (user) => {
-        currentUser = user;
-        isAdmin = checkIsAdmin(user);
-        
-        if (user && isAdmin) {
-            document.getElementById("loginModal").style.display = "none";
-            document.getElementById("logoutBtn").classList.remove("hidden");
-            document.getElementById("showLoginBtnHeader").classList.add("hidden");
-            document.getElementById("userInfo").innerHTML = `<span class="admin-badge">👑 Admin: ${user.email}</span>`;
-            toggleAdminElements(true);
-            setupRealtimeListener();
-        } else {
-            if (user && !isAdmin) signOut(auth);
-            document.getElementById("logoutBtn").classList.add("hidden");
-            document.getElementById("showLoginBtnHeader").classList.remove("hidden");
-            document.getElementById("userInfo").innerHTML = `<span class="visitor-badge">👁️ Mode visiteur</span>`;
-            toggleAdminElements(false);
-            setupRealtimeListener();
-        }
-    });
-
-    document.getElementById("showLoginBtnHeader").addEventListener("click", () => {
-        document.getElementById("loginModal").style.display = "flex";
-    });
-
-    document.getElementById("visitorLoginBtn").addEventListener("click", loginAsVisitor);
-
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-        const email = document.getElementById("loginEmail").value;
-        const password = document.getElementById("loginPassword").value;
-        const errorDiv = document.getElementById("loginError");
-        
-        errorDiv.textContent = "";
-        if (!email || !password) {
-            errorDiv.textContent = "❌ Veuillez remplir tous les champs";
-            return;
-        }
-        
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            
-            if (!ADMIN_UIDS.includes(user.uid)) {
-                errorDiv.textContent = "❌ Ce compte n'a pas les droits administrateur.";
-                await signOut(auth);
-                return;
-            }
-            
-            document.getElementById("loginModal").style.display = "none";
-            document.getElementById("loginEmail").value = "";
-            document.getElementById("loginPassword").value = "";
-            
-        } catch (error) {
-            if (error.code === 'auth/invalid-credential') {
-                errorDiv.textContent = "❌ Email ou mot de passe incorrect.";
-            } else {
-                errorDiv.textContent = "❌ Erreur: " + error.message;
-            }
-        }
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-        await signOut(auth);
-        alert("Déconnecté. Mode visiteur activé.");
-    });
-
-    async function saveToFirebase() {
-        if (isSyncing || !isAdmin) return;
-        
-        isSyncing = true;
-        updateSyncStatus("syncing", "🔄 Synchronisation...");
-        
-        try {
-            const dataToSave = { members, sessions, payments, lastUpdated: new Date().toISOString() };
-            await setDoc(doc(db, "tontine", "sunu_nata_data"), dataToSave);
-            updateSyncStatus("success", "✅ Synchronisé");
-        } catch (error) {
-            console.error("Erreur de sauvegarde:", error);
-            updateSyncStatus("error", "⚠️ Erreur de sauvegarde");
-        } finally {
-            isSyncing = false;
-        }
-    }
-
-    function updateSyncStatus(status, message) {
-        const statusDiv = document.getElementById("syncStatus");
-        statusDiv.textContent = message;
-        statusDiv.style.opacity = "1";
-        if (status === "success" || status === "error") {
-            setTimeout(() => {
-                if (statusDiv.textContent === message) statusDiv.style.opacity = "0.7";
-            }, 2000);
-        }
-    }
-
-    function getAllThursdays(startDate, endDate) {
-        let thursdays = [];
-        let current = new Date(startDate);
-        while (current.getDay() !== 4) current.setDate(current.getDate() + 1);
-        while (current <= endDate) {
-            thursdays.push(new Date(current));
-            current.setDate(current.getDate() + 7);
-        }
-        return thursdays;
-    }
-
-    function formatDateYMD(date) {
-        let d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-    
-    function formatFrenchDate(date) {
-        return new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    async function initializeDefaultData() {
-        members = [
-            { id: "m1", nom: "Diop", prenom: "Fatou", telephone: "77 111 22 33" },
-            { id: "m2", nom: "Ndiaye", prenom: "Oumar", telephone: "78 444 55 66" },
-            { id: "m3", nom: "Sow", prenom: "Aissatou", telephone: "70 123 45 67" },
-            { id: "m4", nom: "Fall", prenom: "Mamadou", telephone: "76 789 01 23" },
-            { id: "m5", nom: "Gueye", prenom: "Aminata", telephone: "77 456 78 90" }
-        ];
-        
-        const startDate = new Date(2024, 0, 1);
-        const endDate = new Date(2031, 11, 31);
-        const thursList = getAllThursdays(startDate, endDate);
-        sessions = [];
-        
-        for (let d of thursList) {
-            sessions.push({
-                id: formatDateYMD(d),
-                dateLabel: formatFrenchDate(d),
-                timestamp: d.getTime(),
-                year: d.getFullYear()
-            });
-        }
-        sessions.sort((a,b) => a.timestamp - b.timestamp);
-        
-        payments = [];
-        for (let session of sessions) {
-            for (let member of members) {
-                payments.push({
-                    id: `${member.id}_${session.id}`,
-                    memberId: member.id,
-                    sessionId: session.id,
-                    status: "unpaid",
-                    amount: FIXED_AMOUNT
-                });
-            }
-        }
-        
-        await saveToFirebase();
-    }
-
-    function generateAllSessions() {
-        if (!isAdmin) { alert("❌ Seul un admin peut générer des sessions"); return; }
-        
-        const startDate = new Date(2024, 0, 1);
-        const endDate = new Date(2031, 11, 31);
-        const allThurs = getAllThursdays(startDate, endDate);
-        const existingIds = new Set(sessions.map(s => s.id));
-        const newSessions = [];
-        
-        for (let d of allThurs) {
-            let sessionId = formatDateYMD(d);
-            if (!existingIds.has(sessionId)) {
-                newSessions.push({
-                    id: sessionId,
-                    dateLabel: formatFrenchDate(d),
-                    timestamp: d.getTime(),
-                    year: d.getFullYear()
-                });
-            }
-        }
-        
-        if (newSessions.length > 0) {
-            sessions.push(...newSessions);
-            sessions.sort((a,b) => a.timestamp - b.timestamp);
-            
-            for (let session of newSessions) {
-                for (let member of members) {
-                    payments.push({
-                        id: `${member.id}_${session.id}`,
-                        memberId: member.id,
-                        sessionId: session.id,
-                        status: "unpaid",
-                        amount: FIXED_AMOUNT
-                    });
-                }
-            }
-            saveToFirebase();
-            renderAll();
-            alert(`✅ ${newSessions.length} nouvelles sessions ajoutées`);
-        } else {
-            alert("✅ Toutes les sessions existent déjà");
-        }
-    }
-
-    function addMember(nom, prenom, tel) {
-        if (!isAdmin) { alert("❌ Seul un admin peut ajouter des membres"); return false; }
-        if (!nom.trim() || !prenom.trim()) { alert("❌ Nom et prénom requis"); return false; }
-        
-        let newId = "m_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-        const newMember = {
-            id: newId,
-            nom: nom.trim(),
-            prenom: prenom.trim(),
-            telephone: tel.trim() || ""
-        };
-        members.push(newMember);
-        
-        for (let session of sessions) {
-            payments.push({
-                id: `${newId}_${session.id}`,
-                memberId: newId,
-                sessionId: session.id,
-                status: "unpaid",
-                amount: FIXED_AMOUNT
-            });
-        }
-        
-        saveToFirebase();
-        applyFiltersAndSort();
-        renderAll();
-        return true;
-    }
-
-    function deleteMember(id) {
-        if (!isAdmin) { alert("❌ Seul un admin peut supprimer des membres"); return; }
-        
-        const memberToDelete = members.find(m => m.id === id);
-        if (!memberToDelete) return;
-        
-        showConfirmModal(
-            "⚠️ Supprimer un membre",
-            `Êtes-vous sûr de vouloir supprimer définitivement ${memberToDelete.prenom} ${memberToDelete.nom} ? Cette action est irréversible.`,
-            () => {
-                members = members.filter(m => m.id !== id);
-                payments = payments.filter(p => p.memberId !== id);
-                saveToFirebase();
-                applyFiltersAndSort();
-                renderAll();
-                alert(`✅ ${memberToDelete.prenom} ${memberToDelete.nom} a été supprimé.`);
-            }
-        );
-    }
-
-    function setPaymentStatus(memberId, sessionId, newStatus) {
-        if (!isAdmin) { alert("❌ Seul un admin peut modifier les paiements"); return; }
-        let payment = payments.find(p => p.memberId === memberId && p.sessionId === sessionId);
-        if (payment) {
-            payment.status = newStatus;
-            saveToFirebase();
-            renderAll();
-        }
-    }
-
-    function getMemberStats(memberId) {
-        let memberPayments = payments.filter(p => p.memberId === memberId);
-        let totalPaid = memberPayments.filter(p => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-        let weeksPaid = memberPayments.filter(p => p.status === "paid").length;
-        let weeksUnpaid = memberPayments.filter(p => p.status === "unpaid").length;
-        return { totalPaid, weeksPaid, weeksUnpaid, debt: weeksUnpaid * FIXED_AMOUNT };
-    }
-
-    function getFilteredStats() {
-        let filteredPayments = [...payments];
-        
-        if (statsFilterType === "year" && statsSelectedYear) {
-            const yearSessions = sessions.filter(s => s.year === statsSelectedYear).map(s => s.id);
-            filteredPayments = filteredPayments.filter(p => yearSessions.includes(p.sessionId));
-        } else if (statsFilterType === "month" && statsSelectedYear !== null && statsSelectedMonth !== null) {
-            const monthSessions = sessions.filter(s => {
-                const date = new Date(s.timestamp);
-                return date.getFullYear() === statsSelectedYear && date.getMonth() === statsSelectedMonth;
-            }).map(s => s.id);
-            filteredPayments = filteredPayments.filter(p => monthSessions.includes(p.sessionId));
-        }
-        
-        const totalCollected = filteredPayments.filter(p => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-        const totalPossible = filteredPayments.length * FIXED_AMOUNT;
-        const totalDebt = totalPossible - totalCollected;
-        
-        return { totalCollected, totalPossible, totalDebt, paymentCount: filteredPayments.length };
-    }
-
-    function getFilteredRanking() {
-        let filteredPayments = [...payments];
-        
-        if (statsFilterType === "year" && statsSelectedYear) {
-            const yearSessions = sessions.filter(s => s.year === statsSelectedYear).map(s => s.id);
-            filteredPayments = filteredPayments.filter(p => yearSessions.includes(p.sessionId));
-        } else if (statsFilterType === "month" && statsSelectedYear !== null && statsSelectedMonth !== null) {
-            const monthSessions = sessions.filter(s => {
-                const date = new Date(s.timestamp);
-                return date.getFullYear() === statsSelectedYear && date.getMonth() === statsSelectedMonth;
-            }).map(s => s.id);
-            filteredPayments = filteredPayments.filter(p => monthSessions.includes(p.sessionId));
-        }
-        
-        let ranking = members.map(member => {
-            const memberPayments = filteredPayments.filter(p => p.memberId === member.id);
-            const totalPaid = memberPayments.filter(p => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-            const weeksPaid = memberPayments.filter(p => p.status === "paid").length;
-            const weeksUnpaid = memberPayments.filter(p => p.status === "unpaid").length;
-            return {
-                id: member.id,
-                name: `${member.prenom} ${member.nom}`,
-                fullName: `${member.prenom} ${member.nom}`.toLowerCase(),
-                total: totalPaid,
-                unpaid: weeksUnpaid,
-                debt: weeksUnpaid * FIXED_AMOUNT,
-                phone: member.telephone || "Non renseigné"
-            };
-        });
-        
-        if (statsSearchTerm) {
-            const term = statsSearchTerm.toLowerCase();
-            ranking = ranking.filter(r => r.fullName.includes(term) || (r.phone && r.phone.includes(term)));
-        }
-        
-        ranking.sort((a, b) => {
-            switch(statsSortType) {
-                case "name_asc":
-                    return a.fullName.localeCompare(b.fullName);
-                case "name_desc":
-                    return b.fullName.localeCompare(a.fullName);
-                case "amount_asc":
-                    return a.total - b.total;
-                case "amount_desc":
-                    return b.total - a.total;
-                case "unpaid_asc":
-                    return a.unpaid - b.unpaid;
-                case "unpaid_desc":
-                    return b.unpaid - a.unpaid;
-                default:
-                    return b.total - a.total;
-            }
-        });
-        
-        filteredRanking = ranking;
-        return ranking;
-    }
-
-    function getMemberDebtByMonth(memberId, year, month) {
-        let monthSessions = sessions.filter(s => {
-            let date = new Date(s.timestamp);
-            return date.getFullYear() === year && date.getMonth() === month;
-        });
-        
-        let totalDebt = 0;
-        let unpaidSessions = [];
-        
-        monthSessions.forEach(session => {
-            let payment = payments.find(p => p.memberId === memberId && p.sessionId === session.id);
-            if (payment && payment.status === "unpaid") {
-                totalDebt += FIXED_AMOUNT;
-                unpaidSessions.push(session);
-            }
-        });
-        
-        return { totalDebt, unpaidCount: unpaidSessions.length, sessions: unpaidSessions };
-    }
-
-    function populateMonthSelector() {
-        const select = document.getElementById("debtMonthSelect");
-        if (!select) return;
-        
-        const years = [...new Set(sessions.map(s => s.year))].sort((a,b) => a-b);
-        const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        
-        let html = '<option value="">-- Sélectionner un mois --</option>';
-        
-        for (let year of years) {
-            const yearSessions = sessions.filter(s => s.year === year);
-            const monthsWithSessions = [...new Set(yearSessions.map(s => new Date(s.timestamp).getMonth()))];
-            
-            if (monthsWithSessions.length > 0) {
-                html += `<optgroup label="📅 ${year}">`;
-                for (let month of monthsWithSessions) {
-                    const sessionCount = yearSessions.filter(s => new Date(s.timestamp).getMonth() === month).length;
-                    html += `<option value="${year}-${month}">${monthsNames[month]} ${year} (${sessionCount} séances)</option>`;
-                }
-                html += `</optgroup>`;
-            }
-        }
-        
-        select.innerHTML = html;
-        
-        select.onchange = () => {
-            if (select.value) {
-                const [year, month] = select.value.split('-');
-                renderDebtRanking(parseInt(year), parseInt(month));
-            } else {
-                document.getElementById("debtRankingList").innerHTML = '<div class="text-center small-text" style="padding: 20px;">Sélectionnez un mois pour voir les dettes</div>';
-            }
-        };
-    }
-
-    function renderDebtRanking(year, month) {
-        const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        
-        let debts = members.map(member => {
-            const debt = getMemberDebtByMonth(member.id, year, month);
-            return {
-                id: member.id,
-                name: `${member.prenom} ${member.nom}`,
-                phone: member.telephone,
-                totalDebt: debt.totalDebt,
-                unpaidCount: debt.unpaidCount,
-                sessions: debt.sessions
-            };
-        }).filter(d => d.totalDebt > 0).sort((a, b) => b.totalDebt - a.totalDebt);
-        
-        const container = document.getElementById("debtRankingList");
-        
-        if (debts.length === 0) {
-            container.innerHTML = `<div class="text-center small-text" style="padding: 20px;">✅ Tous les membres ont payé pour ${monthsNames[month]} ${year} !</div>`;
-            return;
-        }
-        
-        let totalDebtAmount = debts.reduce((sum, d) => sum + d.totalDebt, 0);
-        
-        container.innerHTML = `
-            <div style="margin-bottom: 12px; padding: 8px; background: #fff0ee; border-radius: 12px; text-align: center;">
-                <span style="font-weight: 700;">Total dû pour ${monthsNames[month]} ${year}: ${totalDebtAmount.toLocaleString()} FCFA</span>
-            </div>
-            ${debts.map((d, index) => `
-                <div class="debtor-item">
-                    <div class="debtor-info">
-                        <div class="debtor-name">
-                            ${index + 1}. ${escapeHtml(d.name)}
-                            ${d.unpaidCount > 1 ? `<span class="badge-warning">${d.unpaidCount} séances</span>` : ''}
-                        </div>
-                        <div class="debtor-details">📞 ${d.phone || 'Non renseigné'}</div>
-                    </div>
-                    <div class="debtor-amount">${d.totalDebt.toLocaleString()} F</div>
-                </div>
-            `).join('')}
-        `;
-    }
-
-    function populateStatsYearSelect() {
-        const select = document.getElementById("statsYearSelect");
-        if (!select) return;
-        
-        const years = [...new Set(sessions.map(s => s.year))].sort((a,b) => b-a);
-        let html = '<option value="">Sélectionner une année</option>';
-        
-        for (let year of years) {
-            const sessionCount = sessions.filter(s => s.year === year).length;
-            html += `<option value="${year}">📅 ${year} (${sessionCount} séances)</option>`;
-        }
-        
-        select.innerHTML = html;
-        
-        select.onchange = () => {
-            if (select.value) {
-                statsSelectedYear = parseInt(select.value);
-                statsFilterType = "year";
-                updateStatsFilterUI();
-                renderStatsPage();
-            }
-        };
-    }
-    
-    function populateStatsMonthSelect() {
-        const select = document.getElementById("statsMonthSelect");
-        if (!select) return;
-        
-        const years = [...new Set(sessions.map(s => s.year))].sort((a,b) => b-a);
-        const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        
-        let html = '<option value="">Sélectionner un mois</option>';
-        
-        for (let year of years) {
-            const yearSessions = sessions.filter(s => s.year === year);
-            const monthsWithSessions = [...new Set(yearSessions.map(s => new Date(s.timestamp).getMonth()))];
-            
-            if (monthsWithSessions.length > 0) {
-                html += `<optgroup label="📅 ${year}">`;
-                for (let month of monthsWithSessions.sort((a,b) => a-b)) {
-                    const sessionCount = yearSessions.filter(s => new Date(s.timestamp).getMonth() === month).length;
-                    html += `<option value="${year}-${month}">${monthsNames[month]} ${year} (${sessionCount} séances)</option>`;
-                }
-                html += `</optgroup>`;
-            }
-        }
-        
-        select.innerHTML = html;
-        
-        select.onchange = () => {
-            if (select.value) {
-                const [year, month] = select.value.split('-');
-                statsSelectedYear = parseInt(year);
-                statsSelectedMonth = parseInt(month);
-                statsFilterType = "month";
-                updateStatsFilterUI();
-                renderStatsPage();
-            }
-        };
-    }
-    
-    function updateStatsFilterUI() {
-        const allBtn = document.getElementById("statsAllBtn");
-        const yearBtn = document.getElementById("statsYearBtn");
-        const monthBtn = document.getElementById("statsMonthBtn");
-        const yearSelect = document.getElementById("statsYearSelect");
-        const monthSelect = document.getElementById("statsMonthSelect");
-        const filterInfo = document.getElementById("statsFilterInfo");
-        const filterText = document.getElementById("statsFilterText");
-        
-        allBtn.classList.remove("active");
-        yearBtn.classList.remove("active");
-        monthBtn.classList.remove("active");
-        
-        yearSelect.style.display = "none";
-        monthSelect.style.display = "none";
-        
-        const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        
-        if (statsFilterType === "all") {
-            allBtn.classList.add("active");
-            filterInfo.style.display = "none";
-        } else if (statsFilterType === "year") {
-            yearBtn.classList.add("active");
-            yearSelect.style.display = "block";
-            if (statsSelectedYear) {
-                yearSelect.value = statsSelectedYear;
-                filterInfo.style.display = "flex";
-                filterText.innerHTML = `📆 Année ${statsSelectedYear}`;
-            } else {
-                filterInfo.style.display = "none";
-            }
-        } else if (statsFilterType === "month") {
-            monthBtn.classList.add("active");
-            monthSelect.style.display = "block";
-            if (statsSelectedYear !== null && statsSelectedMonth !== null) {
-                monthSelect.value = `${statsSelectedYear}-${statsSelectedMonth}`;
-                filterInfo.style.display = "flex";
-                filterText.innerHTML = `📅 ${monthsNames[statsSelectedMonth]} ${statsSelectedYear}`;
-            } else {
-                filterInfo.style.display = "none";
-            }
-        }
-    }
-    
-    function resetStatsFilter() {
-        statsFilterType = "all";
-        statsSelectedYear = null;
-        statsSelectedMonth = null;
-        updateStatsFilterUI();
-        renderStatsPage();
-    }
-    
-    function updateSortButtonsUI() {
-        document.querySelectorAll('.sort-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.sort === statsSortType) {
-                btn.classList.add('active');
-            }
-        });
-    }
-
-    async function exportToPDF() {
-        const { jsPDF } = await import('https://cdn.skypack.dev/jspdf@2.5.1');
-        const { default: html2canvas } = await import('https://cdn.skypack.dev/html2canvas@1.4.1');
-        
-        const stats = getFilteredStats();
-        const ranking = getFilteredRanking();
-        let periodText = "Toutes périodes";
-        
-        if (statsFilterType === "year" && statsSelectedYear) {
-            periodText = `Année ${statsSelectedYear}`;
-        } else if (statsFilterType === "month" && statsSelectedYear !== null && statsSelectedMonth !== null) {
-            const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-            periodText = `${monthsNames[statsSelectedMonth]} ${statsSelectedYear}`;
-        }
-        
-        const element = document.createElement('div');
-        element.innerHTML = `
-            <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h1 style="color: #1f6e43; text-align: center;">📊 Sunu Nata - Rapport complet</h1>
-                <p style="text-align: center;">Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
-                <p style="text-align: center; background: #eef2f5; padding: 8px; border-radius: 8px;">Période: ${periodText}</p>
-                ${statsSearchTerm ? `<p style="text-align: center; background: #e3f2fd; padding: 8px; border-radius: 8px;">🔍 Recherche: "${statsSearchTerm}"</p>` : ''}
-                <hr>
-                <h2>📈 Statistiques générales</h2>
-                <p>💰 Total collecté: ${stats.totalCollected.toLocaleString()} FCFA</p>
-                <p>💸 Dette totale: ${stats.totalDebt.toLocaleString()} FCFA</p>
-                <p>👥 Nombre de membres: ${members.length}</p>
-                <p>📊 Membres affichés: ${ranking.length}</p>
-                <hr>
-                <h2>🏆 Classement par contribution (${ranking.length} membres)</h2>
-                <table style="width:100%; border-collapse: collapse;">
-                    <tr style="background: #1f6e43; color: white;">
-                        <th style="padding: 8px; border: 1px solid #ddd;">Rang</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Nom complet</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Total versé</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Impayées</th>
-                    </tr>
-                    ${ranking.map((r, i) => `
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${i+1}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(r.name)}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${r.total.toLocaleString()} F</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${r.unpaid}</td>
-                        </tr>
-                    `).join('')}
-                </table>
-            </div>
-        `;
-        
-        document.body.appendChild(element);
-        const canvas = await html2canvas(element, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`sunu_nata_rapport_${periodText.replace(/ /g, '_')}.pdf`);
-        document.body.removeChild(element);
-    }
-
-    function renderAll() {
-        renderHome();
-        renderMembersPage();
-        renderYearFilter();
-        renderSessionsPage();
-        renderStatsPage();
-        populateMonthSelector();
-        populateStatsYearSelect();
-        populateStatsMonthSelect();
-    }
-
-    function renderHome() {
-        let totalCollected = payments.filter(p => p.status === "paid").reduce((s,p) => s + p.amount, 0);
-        document.getElementById("homeTotalMoney").innerText = totalCollected.toLocaleString();
-        document.getElementById("homeMembersCount").innerText = members.length;
-        document.getElementById("homeSessionsCount").innerText = sessions.length;
-    }
-
-    function renderMembersPage() {
-        let container = document.getElementById("membersList");
-        const paginatedMembers = getPaginatedMembers();
-        
-        if (paginatedMembers.length === 0) {
-            container.innerHTML = `<div class="no-results">😕 Aucun membre trouvé pour "${currentSearchTerm || 'cette recherche'}"</div>`;
-            renderPagination();
-            return;
-        }
-        
-        container.innerHTML = `<div class="result-count">📊 ${filteredMembers.length} membre(s) trouvé(s)</div>` + 
-            paginatedMembers.map(m => {
-            let stats = getMemberStats(m.id);
-            return `
-                <div class="member-row">
-                    <div class="member-info">
-                        <div class="member-name">${escapeHtml(m.prenom)} ${escapeHtml(m.nom)}</div>
-                        <div class="member-phone">📞 ${m.telephone || "Non renseigné"}</div>
-                        <div class="small-text">✅ ${stats.weeksPaid} payées | ❌ ${stats.weeksUnpaid} retards | 💰 ${stats.totalPaid.toLocaleString()} F</div>
-                    </div>
-                    <div class="member-actions">
-                        <button class="details-btn" data-id="${m.id}">📋 Détails</button>
-                        ${isAdmin ? `<button class="delete-btn admin-only-inline visible" data-id="${m.id}">🗑️ Supprimer</button>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        document.querySelectorAll('.details-btn').forEach(btn => {
-            btn.addEventListener('click', () => showMemberDetails(btn.getAttribute('data-id')));
-        });
-        
-        if (isAdmin) {
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => deleteMember(btn.getAttribute('data-id')));
-            });
-        }
-        
-        renderPagination();
-    }
-
-    function showMemberDetails(memberId) {
-        let member = members.find(m => m.id === memberId);
-        if (!member) return;
-        
-        const availableYears = [...new Set(sessions.map(s => s.year))].sort((a,b) => b - a);
-        let currentDetailYear = availableYears[0] || 2024;
-        
-        function renderDetailContent(year) {
-            let yearSessions = sessions.filter(s => s.year === year).sort((a,b) => a.timestamp - b.timestamp);
-            let sessionsByMonth = {};
-            yearSessions.forEach(sess => {
-                let month = new Date(sess.timestamp).getMonth();
-                if (!sessionsByMonth[month]) sessionsByMonth[month] = [];
-                sessionsByMonth[month].push(sess);
-            });
-            
-            let memberPayments = payments.filter(p => p.memberId === memberId);
-            let paidCount = 0, unpaidCount = 0, totalYearAmount = 0;
-            
-            yearSessions.forEach(sess => {
-                let payment = memberPayments.find(p => p.sessionId === sess.id);
-                if (payment) {
-                    if (payment.status === "paid") { paidCount++; totalYearAmount += payment.amount; }
-                    else unpaidCount++;
-                }
-            });
-            
-            let monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-            let monthsHtml = '';
-            
-            for (let i = 0; i < 12; i++) {
-                let monthSessions = sessionsByMonth[i] || [];
-                if (monthSessions.length === 0) continue;
-                
-                let monthPaid = 0, monthUnpaid = 0;
-                monthSessions.forEach(sess => {
-                    let payment = memberPayments.find(p => p.sessionId === sess.id);
-                    if (payment && payment.status === "paid") monthPaid++;
-                    else if (payment) monthUnpaid++;
-                });
-                
-                let sessionsHtml = '';
-                monthSessions.forEach(sess => {
-                    let payment = memberPayments.find(p => p.sessionId === sess.id);
-                    let status = payment ? payment.status : "unpaid";
-                    let statusText = status === 'paid' ? '✅ PAYÉ' : '❌ NON PAYÉ';
-                    let statusClass = status === 'paid' ? 'status-paid' : 'status-unpaid';
-                    sessionsHtml += `<div class="weekday-item"><span>${sess.dateLabel}</span><span class="status-badge ${statusClass}">${statusText}</span></div>`;
-                });
-                
-                monthsHtml += `<div class="month-section"><div class="month-header" data-month="${i}"><span>📅 ${monthsNames[i]} ${year} (${monthPaid}✅ / ${monthUnpaid}❌)</span><span class="toggle-icon">▼</span></div><div class="month-content">${sessionsHtml}</div></div>`;
-            }
-            
-            return { monthsHtml, paidCount, unpaidCount, totalYearAmount };
-        }
-        
-        function buildModal(year) {
-            let content = renderDetailContent(year);
-            let yearsNavHtml = `<div class="year-nav"><button id="prevYearBtn" ${year <= Math.min(...availableYears) ? 'disabled' : ''}>◀ Année précédente</button><span class="current-year-display">${year}</span><button id="nextYearBtn" ${year >= Math.max(...availableYears) ? 'disabled' : ''}>Année suivante ▶</button></div>`;
-            
-            return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><div><h3>${escapeHtml(member.prenom)} ${escapeHtml(member.nom)}</h3></div><span class="close-modal" style="cursor:pointer; font-size:24px;">&times;</span></div>
-                    <div style="display:flex; justify-content:space-around; margin-bottom:20px; background:#f8fafc; padding:12px; border-radius:16px;"><div><div style="font-size:1.3rem; font-weight:800; color:#1f6e43;">${content.paidCount}</div><div class="small-text">✅ Payées</div></div><div><div style="font-size:1.3rem; font-weight:800; color:#e67e22;">${content.unpaidCount}</div><div class="small-text">❌ Impayées</div></div><div><div style="font-size:1.3rem; font-weight:800; color:#1f6e43;">${content.totalYearAmount.toLocaleString()} F</div><div class="small-text">Total versé</div></div><div><div style="font-size:1.3rem; font-weight:800; color:#e67e22;">${(content.unpaidCount * FIXED_AMOUNT).toLocaleString()} F</div><div class="small-text">Dette</div></div></div>
-                    ${yearsNavHtml}<div id="detailMonthsContainer">${content.monthsHtml}</div><button id="closeModal" class="btn-outline">Fermer</button>`;
-        }
-        
-        let modal = document.createElement('div');
-        modal.className = 'modal';
-        let modalContent = document.createElement('div');
-        modalContent.className = 'modal-content';
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-        
-        function updateModal(year) {
-            let content = renderDetailContent(year);
-            modalContent.innerHTML = buildModal(year);
-            
-            document.querySelectorAll('.month-header').forEach(header => {
-                let monthContent = header.nextElementSibling;
-                header.addEventListener('click', () => {
-                    header.classList.toggle('collapsed');
-                    monthContent.classList.toggle('collapsed');
-                });
-            });
-            
-            document.getElementById('prevYearBtn')?.addEventListener('click', () => { let newYear = year - 1; if (availableYears.includes(newYear)) updateModal(newYear); });
-            document.getElementById('nextYearBtn')?.addEventListener('click', () => { let newYear = year + 1; if (availableYears.includes(newYear)) updateModal(newYear); });
-            document.querySelector('.close-modal')?.addEventListener('click', () => modal.remove());
-            document.getElementById('closeModal')?.addEventListener('click', () => modal.remove());
-        }
-        
-        updateModal(currentDetailYear);
-    }
-
-    function getAvailableYears() {
-        let years = new Set();
-        sessions.forEach(s => years.add(s.year));
-        return Array.from(years).sort((a,b) => a-b);
-    }
-
-    function renderYearFilter() {
-        let years = getAvailableYears();
-        let container = document.getElementById("yearFilterBar");
-        if (!container) return;
-        
-        let html = `<span class="year-filter ${currentYearFilter === 'all' ? 'active' : ''}" data-year="all">📅 Toutes (${sessions.length})</span>`;
-        years.forEach(y => {
-            let count = sessions.filter(s => s.year === y).length;
-            html += `<span class="year-filter ${currentYearFilter === y.toString() ? 'active' : ''}" data-year="${y}">📅 ${y} (${count})</span>`;
-        });
-        container.innerHTML = html;
-        
-        document.querySelectorAll('.year-filter').forEach(el => {
-            el.addEventListener('click', () => {
-                currentYearFilter = el.getAttribute('data-year');
-                renderYearFilter();
-                renderSessionsPage();
-            });
-        });
-    }
-
-    function renderSessionsPage() {
-        let select = document.getElementById("sessionSelect");
-        if (!select) return;
-        
-        let filtered = currentYearFilter === "all" ? sessions : sessions.filter(s => s.year === parseInt(currentYearFilter));
-        
-        if (filtered.length === 0) {
-            select.innerHTML = "<option>Aucune session</option>";
-            document.getElementById("sessionPaymentsTable").innerHTML = "";
-            return;
-        }
-        
-        let sorted = [...filtered].sort((a,b) => b.timestamp - a.timestamp);
-        select.innerHTML = `<option value="">-- Choisir une session --</option>` + sorted.map(s => `<option value="${s.id}">${s.dateLabel}</option>`).join('');
-        
-        select.onchange = () => {
-            let sessionId = select.value;
-            if (!sessionId) { document.getElementById("sessionPaymentsTable").innerHTML = ""; return; }
-            
-            let session = sessions.find(s => s.id === sessionId);
-            if (!session) return;
-            
-            let html = `<div class="mb-2" style="background:#eef2f5; padding:10px; border-radius:12px;">💰 Session du ${session.dateLabel} — ${FIXED_AMOUNT} FCFA par personne</div>`;
-            html += `<div class="payment-table"><div class="payment-header"><span>Membre</span><span>Téléphone</span><span>Statut</span></div>`;
-            
-            for (let member of members) {
-                let payment = payments.find(p => p.memberId === member.id && p.sessionId === sessionId);
-                let status = payment ? payment.status : "unpaid";
-                let isPaid = status === "paid";
-                
-                html += `<div class="payment-line"><span><strong>${escapeHtml(member.prenom)} ${escapeHtml(member.nom)}</strong></span><span>${member.telephone || "—"}</span><div class="pay-buttons"><span class="status-badge ${isPaid ? 'status-paid' : 'status-unpaid'}">${isPaid ? '🟢 PAYÉ' : '🔴 NON PAYÉ'}</span>`;
-                
-                if (isAdmin) {
-                    html += `<button class="btn-paid" data-member="${member.id}" data-session="${sessionId}">✔️ Payé</button><button class="btn-unpaid" data-member="${member.id}" data-session="${sessionId}">❌ Non payé</button>`;
-                }
-                
-                html += `</div></div>`;
-            }
-            
-            html += `</div>`;
-            document.getElementById("sessionPaymentsTable").innerHTML = html;
-            
-            if (isAdmin) {
-                document.querySelectorAll('.btn-paid').forEach(btn => btn.addEventListener('click', () => setPaymentStatus(btn.dataset.member, btn.dataset.session, "paid")));
-                document.querySelectorAll('.btn-unpaid').forEach(btn => btn.addEventListener('click', () => setPaymentStatus(btn.dataset.member, btn.dataset.session, "unpaid")));
-            }
-        };
-        
-        if (select.value === "" && sorted.length > 0) { select.value = sorted[0].id; select.onchange(); }
-    }
-
-    function renderStatsPage() {
-        const stats = getFilteredStats();
-        const ranking = getFilteredRanking();
-        
-        let periodLabel = "";
-        if (statsFilterType === "year" && statsSelectedYear) {
-            periodLabel = `<div class="filter-indicator" style="margin-bottom: 16px; justify-content: center;">📆 Période: Année ${statsSelectedYear}</div>`;
-        } else if (statsFilterType === "month" && statsSelectedYear !== null && statsSelectedMonth !== null) {
-            const monthsNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-            periodLabel = `<div class="filter-indicator" style="margin-bottom: 16px; justify-content: center;">📅 Période: ${monthsNames[statsSelectedMonth]} ${statsSelectedYear}</div>`;
-        }
-        
-        const totalCollected = ranking.reduce((sum, r) => sum + r.total, 0);
-        const totalDebt = ranking.reduce((sum, r) => sum + r.debt, 0);
-        const totalMembers = ranking.length;
-        
-        document.getElementById("statsSummary").innerHTML = `
-            ${periodLabel}
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">${totalCollected.toLocaleString()} F</div>
-                    <div class="stat-label">💰 Total collecté</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #e67e22;">${totalDebt.toLocaleString()} F</div>
-                    <div class="stat-label">💸 Dette totale</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${totalMembers}</div>
-                    <div class="stat-label">👥 Membres (filtrés)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${totalMembers > 0 ? Math.round(totalCollected / totalMembers / 1000) : 0}k</div>
-                    <div class="stat-label">📊 Moyenne/membre</div>
-                </div>
-            </div>
-        `;
-        
-        const rankingStatsHtml = `
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <span>📊 ${ranking.length} membre(s) sur ${members.length}</span>
-                ${statsSearchTerm ? `<span class="badge-warning">🔍 "${statsSearchTerm}"</span>` : ''}
-            </div>
-        `;
-        document.getElementById("rankingStats").innerHTML = rankingStatsHtml;
-        
-        if (ranking.length === 0) {
-            document.getElementById("rankingList").innerHTML = `<div class="no-results">😕 Aucun membre trouvé pour "${statsSearchTerm || 'cette recherche'}"</div>`;
-            return;
-        }
-        
-        document.getElementById("rankingList").innerHTML = ranking.map((r, i) => `
-            <div class="member-row">
-                <div>
-                    <span style="font-weight:700;">${i+1}. ${escapeHtml(r.name)}</span>
-                    <div class="small-text">❌ ${r.unpaid} séance(s) impayée(s) | 💰 ${r.total.toLocaleString()} FCFA</div>
-                </div>
-                <div>
-                    <span><strong>${r.total.toLocaleString()} FCFA</strong></span>
-                    ${r.unpaid > 0 ? `<span class="badge-warning">-${r.debt.toLocaleString()} F</span>` : ''}
-                </div>
-            </div>
-        `).join('');
-    }
-
+    // Fonction pour échapper les caractères HTML
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -2351,122 +1012,594 @@
         });
     }
 
-    document.getElementById("statsAllBtn")?.addEventListener("click", () => {
-        resetStatsFilter();
-    });
-    
-    document.getElementById("statsYearBtn")?.addEventListener("click", () => {
-        statsFilterType = "year";
-        statsSelectedYear = null;
-        statsSelectedMonth = null;
-        updateStatsFilterUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("statsMonthBtn")?.addEventListener("click", () => {
-        statsFilterType = "month";
-        statsSelectedYear = null;
-        statsSelectedMonth = null;
-        updateStatsFilterUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("clearStatsFilter")?.addEventListener("click", () => {
-        resetStatsFilter();
-    });
-    
-    document.getElementById("statsSearchInput")?.addEventListener("input", (e) => {
-        statsSearchTerm = e.target.value;
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByNameAsc")?.addEventListener("click", () => {
-        statsSortType = "name_asc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByNameDesc")?.addEventListener("click", () => {
-        statsSortType = "name_desc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByAmountAsc")?.addEventListener("click", () => {
-        statsSortType = "amount_asc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByAmountDesc")?.addEventListener("click", () => {
-        statsSortType = "amount_desc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByUnpaidAsc")?.addEventListener("click", () => {
-        statsSortType = "unpaid_asc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
-    
-    document.getElementById("sortByUnpaidDesc")?.addEventListener("click", () => {
-        statsSortType = "unpaid_desc";
-        updateSortButtonsUI();
-        renderStatsPage();
-    });
+    // Formater la date
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
 
-    document.getElementById("searchMemberInput")?.addEventListener("input", (e) => {
-        currentSearchTerm = e.target.value;
-        applyFiltersAndSort();
-        renderMembersPage();
-    });
-    
-    document.getElementById("sortAZBtn")?.addEventListener("click", () => {
-        currentSortOrder = "asc";
-        document.getElementById("sortAZBtn").classList.add("active");
-        document.getElementById("SortZABtn").classList.remove("active");
-        applyFiltersAndSort();
-        renderMembersPage();
-    });
-    
-    document.getElementById("SortZABtn")?.addEventListener("click", () => {
-        currentSortOrder = "desc";
-        document.getElementById("SortZABtn").classList.add("active");
-        document.getElementById("sortAZBtn").classList.remove("active");
-        applyFiltersAndSort();
-        renderMembersPage();
-    });
-    
-    document.getElementById("addMemberBtn")?.addEventListener("click", () => {
-        let nom = document.getElementById("memberNom").value;
-        let prenom = document.getElementById("memberPrenom").value;
-        let tel = document.getElementById("memberTel").value;
-        if (addMember(nom, prenom, tel)) {
-            document.getElementById("memberNom").value = "";
-            document.getElementById("memberPrenom").value = "";
-            document.getElementById("memberTel").value = "";
+    // Icône selon le moyen de paiement
+    function getMoyenIcon(moyen) {
+        switch(moyen) {
+            case 'Wave': return 'fas fa-waveform';
+            case 'Mobile Money': return 'fas fa-mobile-alt';
+            case 'Espèces': return 'fas fa-money-bill';
+            default: return 'fas fa-credit-card';
+        }
+    }
+
+    // Mettre à jour les statistiques
+    function updateStats() {
+        let total = 0;
+        let payes = 0;
+        let nonPayes = 0;
+
+        cotisations.forEach(cotisation => {
+            const montantNum = parseFloat(cotisation.montant);
+            if (cotisation.payé) {
+                total += montantNum;
+                payes++;
+            } else {
+                nonPayes++;
+            }
+        });
+
+        totalSpan.textContent = total.toLocaleString();
+        payesSpan.textContent = payes;
+        nonPayesSpan.textContent = nonPayes;
+    }
+
+    // Fonction de recherche
+    function filterBySearch() {
+        if (!searchTerm.trim()) {
+            filteredCotisations = [...cotisations];
+        } else {
+            const term = searchTerm.toLowerCase().trim();
+            filteredCotisations = cotisations.filter(c => 
+                c.nom.toLowerCase().includes(term) || 
+                c.prenom.toLowerCase().includes(term)
+            );
+        }
+        sortCotisations();
+    }
+
+    // Fonction de tri
+    function sortCotisations() {
+        switch(currentSort) {
+            case 'alphaAsc':
+                filteredCotisations.sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`));
+                break;
+            case 'alphaDesc':
+                filteredCotisations.sort((a, b) => `${b.nom} ${b.prenom}`.localeCompare(`${a.nom} ${a.prenom}`));
+                break;
+            case 'dateAsc':
+                filteredCotisations.sort((a, b) => new Date(a.date) - new Date(b.date));
+                break;
+            case 'dateDesc':
+                filteredCotisations.sort((a, b) => new Date(b.date) - new Date(a.date));
+                break;
+            default:
+                filteredCotisations.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+        currentPage = 1;
+        displayPaginatedData();
+    }
+
+    // Afficher les données paginées
+    function displayPaginatedData() {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = filteredCotisations.slice(startIndex, endIndex);
+        
+        displayTableData(paginatedItems);
+        updatePaginationControls();
+    }
+
+    // Afficher les données du tableau
+    function displayTableData(data) {
+        if (data.length === 0) {
+            tableBody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="7">
+                        <i class="fas fa-info-circle"></i> Aucun résultat trouvé
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        data.forEach(cotisation => {
+            const tr = document.createElement('tr');
+            const montantNum = parseFloat(cotisation.montant);
+            
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(cotisation.nom)}</strong></td>
+                <td>${escapeHtml(cotisation.prenom)}</td>
+                <td>${montantNum.toLocaleString()} FCFA</td>
+                <td>${formatDate(cotisation.date)}</td>
+                <td><i class="${getMoyenIcon(cotisation.moyen)}"></i> ${escapeHtml(cotisation.moyen)}</td>
+                <td><span class="${cotisation.payé ? 'paid' : 'not-paid'}">${cotisation.payé ? 'Payé' : 'Non payé'}</span></td>
+                <td>
+                    ${!cotisation.payé ? `<button class="btn-pay" data-id="${cotisation.id}"><i class="fas fa-check"></i> Payé</button>` : 
+                                         `<button class="btn-pay" style="background:#95a5a6; cursor:default;" disabled><i class="fas fa-check-circle"></i> Payé</button>`}
+                    <button class="btn-delete" data-id="${cotisation.id}"><i class="fas fa-trash"></i> Suppr</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Ajouter les écouteurs d'événements pour les boutons
+        document.querySelectorAll('.btn-pay[data-id]').forEach(btn => {
+            btn.addEventListener('click', () => marquerPaye(btn.getAttribute('data-id')));
+        });
+
+        document.querySelectorAll('.btn-delete[data-id]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const cotisation = cotisations.find(c => c.id === id);
+                if (cotisation) {
+                    pendingDeleteId = id;
+                    pendingDeleteAll = false;
+                    document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer la cotisation de ${cotisation.nom} ${cotisation.prenom} ?`;
+                    modal.style.display = 'block';
+                }
+            });
+        });
+    }
+
+    // Mettre à jour les contrôles de pagination
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(filteredCotisations.length / itemsPerPage);
+        pageInfo.textContent = `Page ${currentPage} / ${totalPages || 1}`;
+        
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+    }
+
+    // Marquer une cotisation comme payée
+    async function marquerPaye(id) {
+        showLoader('Mise à jour en cours...');
+        try {
+            const cotisationRef = ref(database, `cotisations/${id}`);
+            await update(cotisationRef, { payé: true });
+            showNotification('Statut mis à jour avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour:', error);
+            showNotification('Erreur lors de la mise à jour', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Supprimer une cotisation
+    async function supprimerCotisation(id) {
+        showLoader('Suppression en cours...');
+        try {
+            const cotisationRef = ref(database, `cotisations/${id}`);
+            await remove(cotisationRef);
+            showNotification('Cotisation supprimée avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Supprimer toutes les cotisations
+    async function supprimerToutesCotisations() {
+        showLoader('Suppression de toutes les cotisations...');
+        try {
+            await remove(cotisationsRef);
+            showNotification('Toutes les cotisations ont été supprimées avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Ajouter une cotisation
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const nom = document.getElementById('nom').value.trim();
+        const prenom = document.getElementById('prenom').value.trim();
+        const montant = document.getElementById('montant').value;
+        const date = document.getElementById('date').value;
+        const moyen = document.getElementById('moyen').value;
+        
+        if (!nom || !prenom || !montant || !date || !moyen) {
+            showNotification('Veuillez remplir tous les champs', 'error');
+            return;
+        }
+        
+        if (parseFloat(montant) <= 0) {
+            showNotification('Le montant doit être supérieur à 0', 'error');
+            return;
+        }
+        
+        const nouvelleCotisation = {
+            nom: nom,
+            prenom: prenom,
+            montant: parseFloat(montant),
+            date: date,
+            moyen: moyen,
+            payé: true,
+            createdAt: new Date().toISOString()
+        };
+        
+        showLoader('Ajout en cours...');
+        try {
+            await push(cotisationsRef, nouvelleCotisation);
+            form.reset();
+            showNotification('Cotisation ajoutée avec succès !', 'success');
+        } catch (error) {
+            console.error('Erreur lors de l\'ajout:', error);
+            showNotification('Erreur lors de l\'ajout de la cotisation', 'error');
+        } finally {
+            hideLoader();
         }
     });
     
-    document.getElementById("generateSessionsBtn")?.addEventListener("click", generateAllSessions);
-    document.getElementById("exportAllPdfBtn")?.addEventListener("click", exportToPDF);
-
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            let pageId = btn.getAttribute('data-page');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-            document.getElementById(pageId).classList.add('active-page');
-            if (pageId === 'stats') {
-                populateMonthSelector();
-                populateStatsYearSelect();
-                populateStatsMonthSelect();
-                renderStatsPage();
+    // Export PDF amélioré pour mobile - exporte TOUS les membres
+    async function exporterPDF() {
+        if (cotisations.length === 0) {
+            showNotification('Aucune donnée à exporter', 'error');
+            return;
+        }
+        
+        showLoader(`Préparation du PDF... 0/${cotisations.length} membres`);
+        updateProgress(0, `Préparation de l'export (${cotisations.length} membres)...`);
+        
+        try {
+            // Créer un conteneur pour le PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '15px';
+            pdfContainer.style.background = 'white';
+            pdfContainer.style.fontFamily = 'Inter, sans-serif';
+            pdfContainer.style.width = '800px';
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.top = '-9999px';
+            document.body.appendChild(pdfContainer);
+            
+            // Calculer les statistiques
+            let total = 0;
+            let payes = 0;
+            let nonPayes = 0;
+            
+            cotisations.forEach(cotisation => {
+                const montantNum = parseFloat(cotisation.montant);
+                if(cotisation.payé) {
+                    total += montantNum;
+                    payes++;
+                } else {
+                    nonPayes++;
+                }
+            });
+            
+            // En-tête du PDF
+            const headerHTML = `
+                <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #0a9396;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                        ${logoImg.src ? `<img src="${logoImg.src}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" alt="Logo">` : '<i class="fas fa-sailboat" style="font-size: 48px; color: #0a9396;"></i>'}
+                        <div>
+                            <h1 style="color: #005f73; margin: 0; font-size: 24px;">Le Groupe Voilez Vous</h1>
+                            <h2 style="color: #0a9396; margin: 5px 0 0 0; font-size: 18px;">Rapport des Cotisations</h2>
+                        </div>
+                    </div>
+                    <p style="color: #666; margin: 10px 0 0 0; font-size: 12px;">Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+                </div>
+                
+                <div style="display: flex; justify-content: space-around; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 10px; flex-wrap: wrap; gap: 10px;">
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${total.toLocaleString()} FCFA</div>
+                        <div style="font-size: 11px; color: #666;">Total collecté</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${payes}</div>
+                        <div style="font-size: 11px; color: #666;">Membres à jour</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${nonPayes}</div>
+                        <div style="font-size: 11px; color: #666;">Membres non payés</div>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #005f73;">${cotisations.length}</div>
+                        <div style="font-size: 11px; color: #666;">Total membres</div>
+                    </div>
+                </div>
+            `;
+            
+            pdfContainer.innerHTML = headerHTML;
+            
+            // Ajouter les tableaux par lots pour éviter de surcharger le DOM
+            const batchSize = 100;
+            const totalBatches = Math.ceil(cotisations.length / batchSize);
+            
+            for (let batch = 0; batch < totalBatches; batch++) {
+                const start = batch * batchSize;
+                const end = Math.min(start + batchSize, cotisations.length);
+                const batchData = cotisations.slice(start, end);
+                
+                updateProgress((batch / totalBatches) * 100, `Génération du PDF... ${start + 1}-${end}/${cotisations.length} membres`);
+                
+                let tableHTML = `
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px;">
+                        <thead>
+                            <tr style="background-color: #94d2bd;">
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Nom</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Prénom</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Montant</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Date</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Moyen</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: #005f73;">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                batchData.forEach(cotisation => {
+                    tableHTML += `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.nom)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.prenom)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${parseFloat(cotisation.montant).toLocaleString()} FCFA</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(cotisation.date)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(cotisation.moyen)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${cotisation.payé ? 'Payé' : 'Non payé'}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+                
+                pdfContainer.insertAdjacentHTML('beforeend', tableHTML);
+                
+                // Petit délai pour permettre au DOM de se mettre à jour
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
-        });
+            
+            // Pied de page
+            pdfContainer.insertAdjacentHTML('beforeend', `
+                <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9px; color: #999;">
+                    <p>Document généré automatiquement - Le Groupe Voilez Vous</p>
+                    <p>${new Date().getFullYear()} - Tous droits réservés</p>
+                </div>
+            `);
+            
+            updateProgress(90, 'Génération du PDF en cours...');
+            
+            // Configuration pour mobile - meilleure qualité mais optimisée
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: false
+            });
+            
+            updateProgress(95, 'Finalisation du PDF...');
+            
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            
+            // Format A4 en portrait
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            pdf.save(`cotisations_voilez_vous_${dateStr}.pdf`);
+            
+            // Nettoyer
+            document.body.removeChild(pdfContainer);
+            
+            updateProgress(100, 'Terminé !');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            showNotification(`PDF exporté avec succès ! ${cotisations.length} cotisations`, 'success');
+        } catch (error) {
+            console.error('Erreur lors de l\'export PDF:', error);
+            showNotification('Erreur lors de la génération du PDF', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+    
+    // Notification
+    function showNotification(message, type) {
+        const oldNotifications = document.querySelectorAll('.notification');
+        oldNotifications.forEach(notif => notif.remove());
+        
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // Confirmer la suppression
+    async function confirmerSuppression() {
+        if (pendingDeleteAll) {
+            await supprimerToutesCotisations();
+        } else if (pendingDeleteId) {
+            await supprimerCotisation(pendingDeleteId);
+        }
+        fermerModal();
+    }
+    
+    // Fermer le modal
+    function fermerModal() {
+        modal.style.display = 'none';
+        pendingDeleteId = null;
+        pendingDeleteAll = false;
+    }
+    
+    // Gestion du logo personnalisé
+    logoImg.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    logoImg.src = event.target.result;
+                    localStorage.setItem('customLogo', event.target.result);
+                    showNotification('Logo modifié avec succès !', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        input.click();
     });
+    
+    // Charger le logo personnalisé s'il existe
+    const savedLogo = localStorage.getItem('customLogo');
+    if (savedLogo) {
+        logoImg.src = savedLogo;
+    }
+    
+    // Écouter les changements en temps réel depuis Firebase
+    function listenToFirebase() {
+        showLoader('Chargement des données...');
+        onValue(cotisationsRef, (snapshot) => {
+            const data = snapshot.val();
+            cotisations = [];
+            
+            if (data) {
+                cotisations = Object.keys(data).map(key => ({
+                    id: key,
+                    ...data[key]
+                })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+            
+            updateStats();
+            filterBySearch();
+            hideLoader();
+        }, (error) => {
+            console.error('Erreur:', error);
+            showNotification('Erreur de connexion à Firebase', 'error');
+            hideLoader();
+        });
+    }
+    
+    // Événements de recherche et tri
+    searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        filterBySearch();
+    });
+    
+    sortAlphaBtn.addEventListener('click', () => {
+        currentSort = 'alphaAsc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortAlphaDescBtn.addEventListener('click', () => {
+        currentSort = 'alphaDesc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortDateAscBtn.addEventListener('click', () => {
+        currentSort = 'dateAsc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    sortDateDescBtn.addEventListener('click', () => {
+        currentSort = 'dateDesc';
+        sortCotisations();
+        updateActiveSortButton();
+    });
+    
+    function updateActiveSortButton() {
+        [sortAlphaBtn, sortAlphaDescBtn, sortDateAscBtn, sortDateDescBtn].forEach(btn => btn.classList.remove('active'));
+        if (currentSort === 'alphaAsc') sortAlphaBtn.classList.add('active');
+        if (currentSort === 'alphaDesc') sortAlphaDescBtn.classList.add('active');
+        if (currentSort === 'dateAsc') sortDateAscBtn.classList.add('active');
+        if (currentSort === 'dateDesc') sortDateDescBtn.classList.add('active');
+    }
+    
+    // Pagination
+    perPageSelect.addEventListener('change', (e) => {
+        itemsPerPage = parseInt(e.target.value);
+        currentPage = 1;
+        displayPaginatedData();
+    });
+    
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPaginatedData();
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredCotisations.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayPaginatedData();
+        }
+    });
+    
+    exportPDFBtn.addEventListener('click', exporterPDF);
+    deleteAllBtn.addEventListener('click', () => {
+        if (cotisations.length === 0) {
+            showNotification('Aucune cotisation à supprimer', 'error');
+            return;
+        }
+        pendingDeleteAll = true;
+        pendingDeleteId = null;
+        document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir supprimer TOUTES les cotisations (${cotisations.length} éléments) ? Cette action est irréversible.`;
+        modal.style.display = 'block';
+    });
+    
+    document.getElementById('modalConfirmBtn').addEventListener('click', confirmerSuppression);
+    document.getElementById('modalCancelBtn').addEventListener('click', fermerModal);
+    
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) fermerModal();
+    });
+    
+    // Initialisation
+    updateActiveSortButton();
+    listenToFirebase();
 </script>
 </body>
 </html>
